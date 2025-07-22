@@ -72,13 +72,13 @@ def replace_most_frequent_pair(corpus, t_lr, t_l, t_r):
 
 def bpe(corpus, k):
     vocab = get_unique_chars(corpus)
-    corpus = split_corpus(corpus)
+    corpus_list = split_corpus(corpus)
     
     for i in k:
-        t_l, t_r = get_most_frequent_pair(corpus)
+        t_l, t_r = get_most_frequent_pair(corpus_list)
         t_new = t_l + t_r
         vocab.append(t_new)
-        corpus = replace_most_frequent_pair(corpus, t_new, t_l, t_r) # NOTE we could compute t_new in here
+        corpus_list = replace_most_frequent_pair(corpus_list, t_new, t_l, t_r) # NOTE we could compute t_new in here
     return vocab
 
 def main():
@@ -92,8 +92,8 @@ def main():
     print(uniq)
     
 	# test most frequent pairs
-    corpus = split_corpus(corpus)
-    most_freq = get_most_frequent_pair(corpus)
+    corpus_list = split_corpus(corpus)
+    most_freq = get_most_frequent_pair(corpus_list)
     print(most_freq)
     
 if __name__ == "__main__":
