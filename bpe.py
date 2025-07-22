@@ -54,7 +54,7 @@ def bpe(corpus, k):
         t_new = t_l + t_r
         vocab.append(t_new)
         corpus = replace_most_frequent_pair(corpus, t_new, t_l, t_r) # NOTE we could compute t_new in here
-    return corpus
+    return vocab
 
 def main():
     # test corpus loading
