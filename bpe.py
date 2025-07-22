@@ -102,7 +102,7 @@ def bpe(corpus, k):
         t_l, t_r = get_most_frequent_pair(corpus_list)
         if t_l == None:
             print("No more pairs to merge.")
-            continue
+            break
         t_new = t_l + t_r
         vocab.append(t_new)
         corpus_list = replace_most_frequent_pair(corpus_list, t_new, t_l, t_r)
@@ -111,7 +111,7 @@ def bpe(corpus, k):
 def main():
     # test corpus loading
     corpus_filepath = "./shakespeare.txt"
-    corpus = load_corpus(corpus_filepath, 100000)
+    corpus = load_corpus(corpus_filepath, 100)
     corpus = preprocess_corpus(corpus)
     corpus_list = split_corpus(corpus)
 
