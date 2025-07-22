@@ -15,7 +15,9 @@
 		- t_NEW <- t_L + t_R
 		- V <- V + t_NEW
 		- replace each occurrence of t_L + t_R in C with t_NEW
-    """
+"""
+from collections import Counter
+from itertools import combinations
 
 def load_corpus(filepath, window_size=None):
     """Load corpus from filepath, return as string. If window size is passed, return subset of that size."""
@@ -43,9 +45,27 @@ def split_corpus(corpus):
     return list(corpus)
 
 def get_most_frequent_pair(corpus):
-    # go over all tokens with window size 2, return the most frequent pair
-    pass
+    # go over all tokens, return the most frequent pair
+	d  = Counter()
 
+	if len(corpus) < 2:
+		return None # TODO think about what we need to return here
+     
+	for comb in combinations(corpus,2):
+		d[comb] += 1
+
+	pair = d.most_common(1)[0][0]
+	return pair
+
+def get_all_pair_counts(corpus):
+    # just for looking into stuff. 
+    d  = Counter()
+    
+    for comb in combinations(corpus,2):
+        d[comb] += 1
+
+    return d.most_common()
+    
 def replace_most_frequent_pair(corpus, t_lr, t_l, t_r):
     # replace instances of l r with lr
     pass
@@ -64,12 +84,17 @@ def bpe(corpus, k):
 def main():
     # test corpus loading
     corpus_filepath = "./shakespeare.txt"
-    corpus = load_corpus(corpus_filepath, 10)
+    corpus = load_corpus(corpus_filepath, 1000)
     print(corpus)
     
 	# test unique chars
     uniq = get_unique_chars(corpus)
     print(uniq)
+    
+	# test most frequent pairs
+    corpus = split_corpus(corpus)
+    most_freq = get_most_frequent_pair(corpus)
+    print(most_freq)
     
 if __name__ == "__main__":
     main()
