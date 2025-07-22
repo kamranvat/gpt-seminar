@@ -51,23 +51,29 @@ def split_corpus(corpus):
 
 def get_most_frequent_pair(corpus):
     # go over all tokens, return the most frequent pair
-	d  = Counter()
+    d  = Counter()
 
-	if len(corpus) < 2:
-		return None # TODO think about what we need to return here
-     
-	for comb in combinations(corpus,2):
-		d[comb] += 1
-
-	pair = d.most_common(1)[0][0]
-	return pair
+    if len(corpus) < 2:
+        return None # TODO think about what we need to return here
+    
+    for comb in zip(corpus,corpus[1:]):
+        d[comb] += 1
+          
+    if not d:
+        None, None
+        
+    pair = d.most_common(1)[0][0]
+    return pair
 
 def get_all_pair_counts(corpus):
     # just for looking into stuff. 
     d  = Counter()
     
-    for comb in combinations(corpus,2):
+    for comb in zip(corpus, corpus[1:]):
         d[comb] += 1
+        
+    if not d:
+        return None, None
 
     return d.most_common()
     
