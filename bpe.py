@@ -81,11 +81,16 @@ def replace_most_frequent_pair(corpus, t_lr, t_l, t_r):
     # replace instances of l r with lr
     # for corpora with only one char: this might add typos of ggg -> gggg if t_lr == gg
     new_corpus = []
+    skip = False
     for i in range(0, len(corpus)-1):    
-        if corpus[i] == t_l and corpus[i+1] == t_r:
-            new_corpus.append(t_lr)
+        if skip:
+            skip = False
         else:
-            new_corpus.append(corpus[i])
+            if corpus[i] == t_l and corpus[i+1] == t_r:
+                new_corpus.append(t_lr)
+                skip = True
+            else:
+                new_corpus.append(corpus[i])
             
     return new_corpus
 
@@ -97,7 +102,7 @@ def bpe(corpus, k):
         t_l, t_r = get_most_frequent_pair(corpus_list)
         t_new = t_l + t_r
         vocab.append(t_new)
-        corpus_list = replace_most_frequent_pair(corpus_list, t_new, t_l, t_r) # NOTE we could compute t_new in here
+        corpus_list = replace_most_frequent_pair(corpus_list, t_new, t_l, t_r)
     return vocab
 
 def main():
@@ -108,7 +113,7 @@ def main():
     corpus_list = split_corpus(corpus)
 
 	# test bpe
-    vocab = bpe(corpus_list, 13)
+    vocab = bpe(corpus_list, 130)
     print(vocab)
     
 if __name__ == "__main__":
