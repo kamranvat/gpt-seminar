@@ -30,11 +30,16 @@ def load_corpus(filepath, window_size=None):
             corpus = f.read() 
     return corpus
 
-def preprocess_corpus(corpus, lowercase=True):
+def preprocess_corpus(corpus, lowercase=True, rm_whitespace=True):
     """Take the raw corpus and return the preprocessed corpus"""
     # if lowercase: TODO make lowercase
     # TODO split into words, return as list of strings
-    pass
+    if rm_whitespace:
+        corpus = ' '.join(corpus.split())
+    if lowercase:
+        corpus = corpus.casefold() # casefold instead of lower for better handling of weird chars
+
+    return corpus
 
 def get_unique_chars(corpus):
     """Get unique characters from the corpus (corpus as one str)."""
@@ -84,7 +89,8 @@ def bpe(corpus, k):
 def main():
     # test corpus loading
     corpus_filepath = "./shakespeare.txt"
-    corpus = load_corpus(corpus_filepath, 1000)
+    corpus = load_corpus(corpus_filepath, 10000)
+    corpus = preprocess_corpus(corpus)
     print(corpus)
     
 	# test unique chars
