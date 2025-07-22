@@ -98,10 +98,10 @@ def bpe(corpus, k):
     vocab = list(get_unique_chars(corpus))
     corpus_list = split_corpus(corpus)
     
-    for _ in range(0, k):
+    for i in range(0, k):
         t_l, t_r = get_most_frequent_pair(corpus_list)
         if t_l == None:
-            print("No more pairs to merge.")
+            print(f"No more pairs to merge at k = {i}.")
             break
         t_new = t_l + t_r
         vocab.append(t_new)
