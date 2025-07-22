@@ -54,7 +54,7 @@ def get_most_frequent_pair(corpus):
     d  = Counter()
 
     if len(corpus) < 2:
-        return None # TODO think about what we need to return here
+        return None, None # TODO think about what we need to return here
     
     for comb in zip(corpus,corpus[1:]):
         d[comb] += 1
@@ -100,6 +100,9 @@ def bpe(corpus, k):
     
     for _ in range(0, k):
         t_l, t_r = get_most_frequent_pair(corpus_list)
+        if t_l == None:
+            print("No more pairs to merge.")
+            continue
         t_new = t_l + t_r
         vocab.append(t_new)
         corpus_list = replace_most_frequent_pair(corpus_list, t_new, t_l, t_r)
@@ -108,7 +111,7 @@ def bpe(corpus, k):
 def main():
     # test corpus loading
     corpus_filepath = "./shakespeare.txt"
-    corpus = load_corpus(corpus_filepath, 10000)
+    corpus = load_corpus(corpus_filepath, 100000)
     corpus = preprocess_corpus(corpus)
     corpus_list = split_corpus(corpus)
 
