@@ -86,12 +86,14 @@ def replace_most_frequent_pair(corpus, t_lr, t_l, t_r):
             new_corpus.append(t_lr)
         else:
             new_corpus.append(corpus[i])
+            
+    return new_corpus
 
 def bpe(corpus, k):
     vocab = list(get_unique_chars(corpus))
     corpus_list = split_corpus(corpus)
     
-    for i in range(0, k):
+    for _ in range(0, k):
         t_l, t_r = get_most_frequent_pair(corpus_list)
         t_new = t_l + t_r
         vocab.append(t_new)
@@ -103,19 +105,10 @@ def main():
     corpus_filepath = "./shakespeare.txt"
     corpus = load_corpus(corpus_filepath, 10000)
     corpus = preprocess_corpus(corpus)
-    print(corpus)
-    
-	# test unique chars
-    uniq = get_unique_chars(corpus)
-    print(uniq)
-    
-	# test most frequent pairs
     corpus_list = split_corpus(corpus)
-    most_freq = get_most_frequent_pair(corpus_list)
-    print(most_freq)
-    
+
 	# test bpe
-    vocab = bpe(corpus, 3)
+    vocab = bpe(corpus_list, 13)
     print(vocab)
     
 if __name__ == "__main__":
