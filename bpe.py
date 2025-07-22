@@ -15,7 +15,6 @@
 		- t_NEW <- t_L + t_R
 		- V <- V + t_NEW
 		- replace each occurrence of t_L + t_R in C with t_NEW
-		-
     """
 
 def load_corpus(filepath, window_size=None):
@@ -36,9 +35,8 @@ def preprocess_corpus(corpus, lowercase=True):
     pass
 
 def get_unique_chars(corpus):
-    # """Get unique characters from the corpus (corpus as one str)."""
-    # return set(corpus)
-    pass
+    """Get unique characters from the corpus (corpus as one str)."""
+    return set(corpus)
 
 def get_most_frequent_pair(corpus):
     # go over all tokens with window size 2, return the most frequent pair
@@ -61,8 +59,12 @@ def bpe(corpus, k):
 def main():
     # test corpus loading
     corpus_filepath = "./shakespeare.txt"
-    corpus = load_corpus(corpus_filepath, 1000)
+    corpus = load_corpus(corpus_filepath, 10)
     print(corpus)
+    
+	# test unique chars
+    uniq = get_unique_chars(corpus)
+    print(uniq)
     
 if __name__ == "__main__":
     main()
