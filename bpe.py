@@ -18,6 +18,17 @@
 		-
     """
 
+def load_corpus(filepath, window_size=None):
+    """Load corpus from filepath, return as string. If window size is passed, return subset of that size."""
+    corpus = ""
+    if window_size:
+        with open(filepath, "r") as f:
+            corpus = f.read(window_size)
+    else:
+        with open(filepath, "r") as f:
+            corpus = f.read() 
+    return corpus
+
 def preprocess_corpus(corpus, lowercase=True):
     """Take the raw corpus and return the preprocessed corpus"""
     # if lowercase: TODO make lowercase
@@ -25,7 +36,7 @@ def preprocess_corpus(corpus, lowercase=True):
     pass
 
 def get_unique_chars(corpus):
-    # """Get unique characters from the corpus."""
+    # """Get unique characters from the corpus (corpus as one str)."""
     # return set(corpus)
     pass
 
@@ -47,3 +58,11 @@ def bpe(corpus, k):
         corpus = replace_most_frequent_pair(corpus, t_new, t_l, t_r) # NOTE we could compute t_new in here
     return corpus
 
+def main():
+    # test corpus loading
+    corpus_filepath = "./shakespeare.txt"
+    corpus = load_corpus(corpus_filepath, 1000)
+    print(corpus)
+    
+if __name__ == "__main__":
+    main()
