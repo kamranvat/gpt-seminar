@@ -111,7 +111,7 @@ def bpe(corpus, k):
 def main():
     # test corpus loading
     corpus_filepath = "./shakespeare.txt"
-    corpus = load_corpus(corpus_filepath, 100)
+    corpus = load_corpus(corpus_filepath, 1000)
     corpus = preprocess_corpus(corpus)
     corpus_list = split_corpus(corpus)
 
