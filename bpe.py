@@ -79,13 +79,19 @@ def get_all_pair_counts(corpus):
     
 def replace_most_frequent_pair(corpus, t_lr, t_l, t_r):
     # replace instances of l r with lr
-    pass
+    # for corpora with only one char: this might add typos of ggg -> gggg if t_lr == gg
+    new_corpus = []
+    for i in range(0, len(corpus)-1):    
+        if corpus[i] == t_l and corpus[i+1] == t_r:
+            new_corpus.append(t_lr)
+        else:
+            new_corpus.append(corpus[i])
 
 def bpe(corpus, k):
-    vocab = get_unique_chars(corpus)
+    vocab = list(get_unique_chars(corpus))
     corpus_list = split_corpus(corpus)
     
-    for i in k:
+    for i in range(0, k):
         t_l, t_r = get_most_frequent_pair(corpus_list)
         t_new = t_l + t_r
         vocab.append(t_new)
@@ -107,6 +113,10 @@ def main():
     corpus_list = split_corpus(corpus)
     most_freq = get_most_frequent_pair(corpus_list)
     print(most_freq)
+    
+	# test bpe
+    vocab = bpe(corpus, 3)
+    print(vocab)
     
 if __name__ == "__main__":
     main()
