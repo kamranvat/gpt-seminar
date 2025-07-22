@@ -38,6 +38,10 @@ def get_unique_chars(corpus):
     """Get unique characters from the corpus (corpus as one str)."""
     return set(corpus)
 
+def split_corpus(corpus):
+    """Return the corpus as list of strings to prepare for further processing"""
+    return list(corpus)
+
 def get_most_frequent_pair(corpus):
     # go over all tokens with window size 2, return the most frequent pair
     pass
@@ -48,7 +52,8 @@ def replace_most_frequent_pair(corpus, t_lr, t_l, t_r):
 
 def bpe(corpus, k):
     vocab = get_unique_chars(corpus)
-    # TODO track the merges in here?
+    corpus = split_corpus(corpus)
+    
     for i in k:
         t_l, t_r = get_most_frequent_pair(corpus)
         t_new = t_l + t_r
