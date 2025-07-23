@@ -9,8 +9,9 @@
 - split 99/1 - norm (diff strats) - compare
 """
 from collections import Counter
-from itertools import combinations
+from itertools import filterfalse
 import random
+import numpy as np
 
 def load_corpus(filepath, window_size=None):
     """Load corpus from filepath, return as string. If window size is passed, return subset of that size."""
@@ -36,7 +37,7 @@ def get_unique_chars(corpus):
     """Get unique characters from the corpus (corpus as one str)."""
     return set(corpus)
 
-def split_corpus(corpus):
+def split_corpus(corpus): # TODO rename or replace
     """Return the corpus as list of strings to prepare for further processing"""
     return list(corpus)
 
@@ -45,7 +46,7 @@ def get_most_frequent_pair(corpus):
     d  = Counter()
     if len(corpus) < 2:
         return None, None 
-    for comb in zip(corpus,corpus[1:]):
+    for comb in zip(corpus, corpus[1:]):
         d[comb] += 1
     if not d:
         None, None
@@ -53,6 +54,7 @@ def get_most_frequent_pair(corpus):
     return pair
 
 def get_all_pair_counts(corpus):
+    """Return the counts of all pairs of neighboring tokens in corpus."""
     # just for looking into stuff. 
     d  = Counter()
     for comb in zip(corpus, corpus[1:]):
@@ -92,26 +94,47 @@ def bpe(corpus, k):
     for i in range(0, k):
         t_l, t_r = get_most_frequent_pair(corpus_list)
         if t_l == None:
-            print(f"No more pairs to merge at k = {i}.")
+            print(f"[WARNING] Stopped merging at k = {i} - no more pairs available!")
             break
         t_new = t_l + t_r
         vocab.append(t_new)
         corpus_list = replace_most_frequent_pair(corpus_list, t_new, t_l, t_r)
-    return vocab
+    return corpus_list, vocab
 
+def test_bpe(vocab, test_set):
+    """Take a vocab and a test set (as str), run bpe, return information about the performance"""
+    test_set = split_corpus(test_set) # list of str
+    valid_indices = list(range(0, len(test_set)))
+    
+    for token in vocab:
+        i = 0
+        while i < len(valid_indices)-1:
+            l = valid_indices[i]
+            r = valid_indices[i+1]
+            t_l = test_set[l]
+            t_r = test_set[r]
+            if token == t_l + t_r:
+                test_set[l] = token
+                del valid_indices[i+1]
+            i += 1
+    return np.array(test_set)[valid_indices]
+		
+
+    
 def main():
     # test corpus loading
     corpus_filepath = "./shakespeare.txt"
     corpus = load_corpus(corpus_filepath, 1000)
     corpus = preprocess_corpus(corpus)
     corpus_list = split_corpus(corpus)
-    corpus_list = extract_test_set(corpus, 0.4)
-    print(corpus_list)
+    test_set = extract_test_set(corpus, 0.1)
 
 	# test bpe
-    #vocab = bpe(corpus_list, 130)
-    #print(vocab)
+    corpus_list, vocab = bpe(corpus_list, 130)
     
+	# test test_bpe
+    vocab = test_bpe(vocab, corpus)
+    print(vocab)
     
 if __name__ == "__main__":
     main()
