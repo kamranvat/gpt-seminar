@@ -7,17 +7,10 @@
         - visualize this somehow
     - chars that can not be matched at all are counted as fail
 - split 99/1 - norm (diff strats) - compare
-- BPE pseudocode:
-- args: corpus (as one file), nr of merges k; returns vocab
-	- dict V <- all unique chars in C (write own fct)
-	- do k times:
-		- t_L, t_R <- most freq pair of adj tokens in c
-		- t_NEW <- t_L + t_R
-		- V <- V + t_NEW
-		- replace each occurrence of t_L + t_R in C with t_NEW
 """
 from collections import Counter
 from itertools import combinations
+import random
 
 def load_corpus(filepath, window_size=None):
     """Load corpus from filepath, return as string. If window size is passed, return subset of that size."""
@@ -32,13 +25,11 @@ def load_corpus(filepath, window_size=None):
 
 def preprocess_corpus(corpus, lowercase=True, rm_whitespace=True):
     """Take the raw corpus and return the preprocessed corpus"""
-    # if lowercase: TODO make lowercase
-    # TODO split into words, return as list of strings
+    # TODO: add regex things in here
     if rm_whitespace:
         corpus = ' '.join(corpus.split())
     if lowercase:
         corpus = corpus.casefold() # casefold instead of lower for better handling of weird chars
-
     return corpus
 
 def get_unique_chars(corpus):
@@ -50,36 +41,30 @@ def split_corpus(corpus):
     return list(corpus)
 
 def get_most_frequent_pair(corpus):
-    # go over all tokens, return the most frequent pair
+    """Return the most frequent pair of neighboring tokens in corpus"""
     d  = Counter()
-
     if len(corpus) < 2:
-        return None, None # TODO think about what we need to return here
-    
+        return None, None 
     for comb in zip(corpus,corpus[1:]):
         d[comb] += 1
-          
     if not d:
         None, None
-        
     pair = d.most_common(1)[0][0]
     return pair
 
 def get_all_pair_counts(corpus):
     # just for looking into stuff. 
     d  = Counter()
-    
     for comb in zip(corpus, corpus[1:]):
         d[comb] += 1
-        
     if not d:
         return None, None
 
     return d.most_common()
     
 def replace_most_frequent_pair(corpus, t_lr, t_l, t_r):
-    # replace instances of l r with lr
-    # for corpora with only one char: this might add typos of ggg -> gggg if t_lr == gg
+    """In corpus, replace instances of "l", "r" with "lr" """
+    # note that for corpora with only one char: this might add typos of ggg -> gggg if t_lr == gg
     new_corpus = []
     skip = False
     for i in range(0, len(corpus)-1):    
@@ -91,8 +76,14 @@ def replace_most_frequent_pair(corpus, t_lr, t_l, t_r):
                 skip = True
             else:
                 new_corpus.append(corpus[i])
-            
     return new_corpus
+
+def extract_test_set(corpus, percentage):
+    """Return randomly sampled test set of size percentage*wordcount as str"""
+    split_corpus = corpus.split()
+    n_words = int(percentage*len(split_corpus))
+    split_corpus = random.sample(split_corpus, n_words)
+    return " ".join(split_corpus)
 
 def bpe(corpus, k):
     vocab = list(get_unique_chars(corpus))
@@ -114,10 +105,13 @@ def main():
     corpus = load_corpus(corpus_filepath, 1000)
     corpus = preprocess_corpus(corpus)
     corpus_list = split_corpus(corpus)
+    corpus_list = extract_test_set(corpus, 0.4)
+    print(corpus_list)
 
 	# test bpe
-    vocab = bpe(corpus_list, 130)
-    print(vocab)
+    #vocab = bpe(corpus_list, 130)
+    #print(vocab)
+    
     
 if __name__ == "__main__":
     main()
