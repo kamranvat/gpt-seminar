@@ -14,7 +14,7 @@ from itertools import filterfalse
 import random
 import numpy as np
 import matplotlib.pyplot as plt
-
+import matplotlib
 
 def load_corpus(filepath, window_size=None):
     """Load corpus from filepath, return as string. If window size is passed, return subset of that size."""
@@ -114,11 +114,11 @@ def bpe(corpus, k):
         corpus_list = replace_most_frequent_pair(corpus_list, t_new, t_l, t_r)
     return corpus_list, vocab
 
-
-def test_bpe(vocab, test_set):
+def test_bpe(vocab, test_set, min_token_length=3):
     """Take a vocab and a test set (as str), run bpe, return information about the performance"""
     test_set = split_corpus(test_set)  # list of str
     valid_indices = list(range(0, len(test_set)))
+    matched_indices = np.zeros_like(test_set, dtype=bool)
 
     for token in vocab:
         i = 0
@@ -127,12 +127,50 @@ def test_bpe(vocab, test_set):
             r = valid_indices[i + 1]
             t_l = test_set[l]
             t_r = test_set[r]
+            # match single character tokens
+            if token == t_l and len(token)>=min_token_length:
+                matched_indices[l] = True
+
             if token == t_l + t_r:
                 test_set[l] = token
-                del valid_indices[i + 1]
+                del valid_indices[i+1]
+                if len(token)>=min_token_length:
+                    matched_indices[l] = True
+                    matched_indices[r] = True
             i += 1
-    return np.array(test_set)[valid_indices]
+    
+    percentage_matched = np.sum(matched_indices)/len(test_set)
+        
+    return np.array(test_set)[valid_indices], percentage_matched, np.sum(matched_indices)
+		
 
+def evaluate(vocab, test_set, max_n=3):
+    # check percentage of text covered by all, and then with increasing n
+    # all tokens of length >n
+    coverages = []
+    matched_chars = []
+    for n in range(1, max_n+1):
+        t, coverage, m = test_bpe(vocab, test_set, min_token_length=n)
+        coverages.append(coverage)
+        matched_chars.append(m)
+
+    
+    return coverages
+
+def plot_coverages(vocab, train_set, test_set, max_n=3):
+    coverages = evaluate(vocab, train_set, max_n=max_n)
+    x = np.arange(start=1, stop=max_n+1)
+    test_coverages = evaluate(vocab, test_set, max_n=max_n)    
+
+    fig, ax = plt.subplots(figsize=(6, 2), layout='tight')
+    ax.xaxis.set_major_locator(matplotlib.ticker.MultipleLocator())
+    ax.set_xlabel('x')
+    ax.plot(x, coverages, label='train')
+    ax.plot(x, test_coverages, label='test')
+    plt.xlabel('n')
+    plt.ylabel('percentage covered')
+    plt.legend()
+    plt.show()
 
 def evaluate_token_length(vocab, train_set, test_set):
     """Compare metrics of the segmentation between the train and test set"""
@@ -164,12 +202,10 @@ def main():
     corpus_list = split_corpus(corpus)
     test_set = extract_test_set(corpus, 0.1)
 
-    # test bpe
-    corpus_list, vocab = bpe(corpus_list, 130)
-
-    # test test_bpe
-    vocab = test_bpe(vocab, corpus)
-    print(vocab)
+	# test bpe
+    tokenized_corpus_list, vocab = bpe(corpus_list, 130)
+    
+    plot_coverages(vocab, corpus_list, test_set, 20)
 
     # test eval
     evaluate_token_length(vocab, corpus, test_set)
