@@ -38,7 +38,7 @@ def n_gram(text, n):
 
 def main():
     # test corpus loading
-    corpus_filepath = r"C:\Users\acer\Downloads\shakespeare.txt"
+    corpus_filepath = r"corpora\shakespeare.txt"
     corpus = load_corpus(corpus_filepath, 300000)
     text = preprocess_corpus(corpus)
     top_bigram = n_gram(text, 2)
