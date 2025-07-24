@@ -15,6 +15,8 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+import time
+import json
 
 
 def load_corpus(filepath, window_size=None):
@@ -27,6 +29,20 @@ def load_corpus(filepath, window_size=None):
         with open(filepath, "r") as f:
             corpus = f.read()
     return corpus
+
+
+def store_vocab(vocab, filepath, name):
+    """Store generated vocab"""
+    filepath = filepath + name
+    with open(filepath, "w") as f:
+        json.dump(vocab, f)
+
+
+def load_vocab(filepath):
+    """Load vocab from file"""
+    with open(filepath, "r") as f:
+        vocab = json.load(f)
+    return vocab
 
 
 def preprocess_corpus(corpus, lowercase=True, rm_whitespace=True):
@@ -102,6 +118,7 @@ def extract_test_set(corpus, percentage):
 
 
 def bpe(corpus, k):
+    start = time.time()
     vocab = list(get_unique_chars(corpus))
     corpus_list = split_corpus(corpus)
 
@@ -113,6 +130,9 @@ def bpe(corpus, k):
         t_new = t_l + t_r
         vocab.append(t_new)
         corpus_list = replace_most_frequent_pair(corpus_list, t_new, t_l, t_r)
+    end = time.time()
+    timer = end - start
+    print(timer)
     return corpus_list, vocab
 
 
@@ -202,21 +222,34 @@ def evaluate_token_length(vocab, train_set, test_set):
 
 
 def main():
-    # test corpus loading
-    corpus_filepath = "./shakespeare.txt"
-    sms_filepath = "./smsspamcollection/SMSSpamCollection.txt"
-    corpus = load_corpus(corpus_filepath, 1000)
+    # paths
+    shakespeare_unclean_path = "./corpora/shakespeare.txt"
+    shakespeare_clean_path = "./corpora/Shakespeare_clean_full.txt"
+    shakespeare_train_path = "./corpora/Shakespeare_clean_train.txt"
+    shakespeare_test_path = "./corpora/Shakespeare_clean_test.txt"
+    sms_path = "./corpora/sms_clean.txt"
+    vocab_dir_path = "./data/"
+
+    # params
+    k = 20
+    n_chars = 1000  # set to None to load full corpus
+    testset_ratio = 0.1  # how much of the full corpus to use as test
+
+    corpus = load_corpus(shakespeare_train_path, n_chars)
     corpus = preprocess_corpus(corpus)
-    corpus_list = split_corpus(corpus)
-    test_set = extract_test_set(corpus, 0.1)
-    sms_test_set = load_corpus(sms_filepath, 1000)
+    test_set = extract_test_set(corpus, testset_ratio)
+    # test_set = load_corpus(sms_path, n_chars)
 
     # test bpe
-    tokenized_corpus_list, vocab = bpe(corpus_list, 130)
+    tokenized_corpus_list, vocab = bpe(corpus, k)
+    print(vocab)
 
-    plot_coverages(vocab, corpus_list, sms_test_set, 20)
+    # store vocab
+    vocab_name = f"vocab_n{n_chars}_k{k}.txt"
+    store_vocab(vocab, vocab_dir_path, vocab_name)
 
-    # test eval
+    # plots
+    plot_coverages(vocab, corpus, test_set, 20)
     # evaluate_token_length(vocab, corpus, test_set)
 
 
