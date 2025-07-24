@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import time
 import json
+from tqdm import tqdm
 
 
 def load_corpus(filepath, window_size=None):
@@ -122,7 +123,7 @@ def bpe(corpus, k):
     vocab = list(get_unique_chars(corpus))
     corpus_list = split_corpus(corpus)
 
-    for i in range(0, k):
+    for i in tqdm(range(0, k), desc="Training"):
         t_l, t_r = get_most_frequent_pair(corpus_list)
         if t_l == None:
             print(f"[WARNING] Stopped merging at k = {i} - no more pairs available!")
@@ -142,7 +143,7 @@ def test_bpe(vocab, test_set, min_token_length=3):
     valid_indices = list(range(0, len(test_set)))
     matched_indices = np.zeros_like(test_set, dtype=bool)
 
-    for token in vocab:
+    for token in tqdm(vocab, desc="Testing"):
         i = 0
         while i < len(valid_indices) - 1:
             l = valid_indices[i]
@@ -231,7 +232,7 @@ def main():
     vocab_dir_path = "./data/"
 
     # params
-    k = 1000
+    k = 1500
     n_chars = None  # set to None to load full corpus
     testset_ratio = 0.1  # how much of the full corpus to use as test
 
