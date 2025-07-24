@@ -119,7 +119,6 @@ def extract_test_set(corpus, percentage):
 
 
 def bpe(corpus, k):
-    start = time.time()
     vocab = list(get_unique_chars(corpus))
     corpus_list = split_corpus(corpus)
 
@@ -131,9 +130,6 @@ def bpe(corpus, k):
         t_new = t_l + t_r
         vocab.append(t_new)
         corpus_list = replace_most_frequent_pair(corpus_list, t_new, t_l, t_r)
-    end = time.time()
-    timer = end - start
-    print(timer)
     return corpus_list, vocab
 
 
@@ -232,11 +228,11 @@ def main():
     vocab_dir_path = "./data/"
 
     # params
-    k = 1500
+    k = 750
     n_chars = None  # set to None to load full corpus
     testset_ratio = 0.1  # how much of the full corpus to use as test
 
-    corpus = load_corpus(shakespeare_train_path, n_chars)
+    corpus = load_corpus(sms_path, n_chars)
     corpus = preprocess_corpus(corpus)
     test_set = extract_test_set(corpus, testset_ratio)
     # test_set = load_corpus(sms_path, n_chars)
@@ -250,6 +246,8 @@ def main():
         vocab_name = f"vocab_n{n_chars}_k{k}.txt"
     else:
         vocab_name = f"vocab_full_k{k}.txt"
+    # prefix for sms corpus
+    vocab_name = "sms_" + vocab_name
     store_vocab(vocab, vocab_dir_path, vocab_name)
 
     # plots
