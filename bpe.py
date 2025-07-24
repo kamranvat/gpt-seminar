@@ -134,13 +134,13 @@ def bpe(corpus, k):
     return corpus_list, vocab
 
 
-def test_bpe(vocab, test_set, min_token_length=3):
+def test_bpe(vocab, test_set, min_token_length=3, tqdm_position=None):
     """Take a vocab and a test set (as str), run bpe, return information about the performance"""
     test_set = split_corpus(test_set)  # list of str
     valid_indices = list(range(0, len(test_set)))
     matched_indices = np.zeros_like(test_set, dtype=bool)
 
-    for token in tqdm(vocab, desc="Testing"):
+    for token in tqdm(vocab, desc="Testing", position=tqdm_position):
         i = 0
         while i < len(valid_indices) - 1:
             l = valid_indices[i]
@@ -170,8 +170,10 @@ def test_bpe(vocab, test_set, min_token_length=3):
 
 def _test_bpe_worker(args):
     """Worker function for multiprocessing in evaluate function"""
-    vocab, test_set, n = args
-    t, coverage, m = test_bpe(vocab, test_set, min_token_length=n)
+    vocab, test_set, n, position = args
+    t, coverage, m = test_bpe(
+        vocab, test_set, min_token_length=n, tqdm_position=position
+    )
     return coverage, m
 
 
@@ -182,7 +184,7 @@ def evaluate(vocab, test_set, max_n=3):
     matched_chars = []
 
     # arguments for worker processes
-    args_list = [(vocab, test_set, n) for n in range(1, max_n + 1)]
+    args_list = [(vocab, test_set, n, i) for i, n in enumerate(range(1, max_n + 1))]
 
     # multiprocessing with min(cpu_cores, max_n) workers
     num_workers = min(mp.cpu_count(), max_n)
@@ -272,7 +274,7 @@ def main():
     # store_vocab(vocab, vocab_dir_path, vocab_name)
 
     # plots
-    plot_coverages(vocab, corpus, test_set, 20)
+    plot_coverages(vocab, corpus, test_set, 10)
     # evaluate_token_length(vocab, corpus, test_set)
 
 
