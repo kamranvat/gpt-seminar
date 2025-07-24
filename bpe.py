@@ -18,6 +18,7 @@ import matplotlib
 import time
 import json
 from tqdm import tqdm
+import multiprocessing as mp
 
 
 def load_corpus(filepath, window_size=None):
@@ -167,13 +168,30 @@ def test_bpe(vocab, test_set, min_token_length=3):
     )
 
 
+def _test_bpe_worker(args):
+    """Worker function for multiprocessing in evaluate function"""
+    vocab, test_set, n = args
+    t, coverage, m = test_bpe(vocab, test_set, min_token_length=n)
+    return coverage, m
+
+
 def evaluate(vocab, test_set, max_n=3):
     # check percentage of text covered by all, and then with increasing n
     # all tokens of length >n
     coverages = []
     matched_chars = []
-    for n in range(1, max_n + 1):
-        t, coverage, m = test_bpe(vocab, test_set, min_token_length=n)
+
+    # arguments for worker processes
+    args_list = [(vocab, test_set, n) for n in range(1, max_n + 1)]
+
+    # multiprocessing with min(cpu_cores, max_n) workers
+    num_workers = min(mp.cpu_count(), max_n)
+    print(f"Using {num_workers} worker(s)...")
+
+    with mp.Pool(num_workers) as pool:
+        results = pool.map(_test_bpe_worker, args_list)
+
+    for coverage, m in results:
         coverages.append(coverage)
         matched_chars.append(m)
 
@@ -232,14 +250,17 @@ def main():
     n_chars = None  # set to None to load full corpus
     testset_ratio = 0.1  # how much of the full corpus to use as test
 
-    corpus = load_corpus(sms_path, n_chars)
+    corpus = load_corpus(shakespeare_train_path, n_chars)
     corpus = preprocess_corpus(corpus)
     test_set = extract_test_set(corpus, testset_ratio)
-    # test_set = load_corpus(sms_path, n_chars)
+    test_set = load_corpus(sms_path, n_chars)
 
     # test bpe
-    tokenized_corpus_list, vocab = bpe(corpus, k)
+    # tokenized_corpus_list, vocab = bpe(corpus, k)
     # print(vocab)
+
+    # load vocab instead of generating it
+    vocab = load_vocab("./data/vocab_full_k250.txt")
 
     # store vocab
     if n_chars:
@@ -247,11 +268,11 @@ def main():
     else:
         vocab_name = f"vocab_full_k{k}.txt"
     # prefix for sms corpus
-    vocab_name = "sms_" + vocab_name
-    store_vocab(vocab, vocab_dir_path, vocab_name)
+    # vocab_name = "sms_" + vocab_name
+    # store_vocab(vocab, vocab_dir_path, vocab_name)
 
     # plots
-    # plot_coverages(vocab, corpus, test_set, 20)
+    plot_coverages(vocab, corpus, test_set, 20)
     # evaluate_token_length(vocab, corpus, test_set)
 
 
