@@ -231,8 +231,8 @@ def main():
     vocab_dir_path = "./data/"
 
     # params
-    k = 20
-    n_chars = 1000  # set to None to load full corpus
+    k = 1000
+    n_chars = None  # set to None to load full corpus
     testset_ratio = 0.1  # how much of the full corpus to use as test
 
     corpus = load_corpus(shakespeare_train_path, n_chars)
@@ -242,14 +242,17 @@ def main():
 
     # test bpe
     tokenized_corpus_list, vocab = bpe(corpus, k)
-    print(vocab)
+    # print(vocab)
 
     # store vocab
-    vocab_name = f"vocab_n{n_chars}_k{k}.txt"
+    if n_chars:
+        vocab_name = f"vocab_n{n_chars}_k{k}.txt"
+    else:
+        vocab_name = f"vocab_full_k{k}.txt"
     store_vocab(vocab, vocab_dir_path, vocab_name)
 
     # plots
-    plot_coverages(vocab, corpus, test_set, 20)
+    # plot_coverages(vocab, corpus, test_set, 20)
     # evaluate_token_length(vocab, corpus, test_set)
 
 
