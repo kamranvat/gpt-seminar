@@ -216,6 +216,26 @@ def plot_coverages(vocab, train_set, test_set, max_n=3):
     plt.show()
 
 
+def create_str_to_int_map(vocab):
+    """take the vocab and return a dict mapping tokens to indices"""
+    return {token: i for i, token in enumerate(vocab)}
+
+
+def create_int_to_str_map(vocab):
+    """take the vocab and return a dict mapping indices to tokens"""
+    return {i: token for i, token in enumerate(vocab)}
+
+
+def encode(tokens, str_to_int_map):
+    """take list of str tokens and return list of int tokens"""
+    return [str_to_int_map[token] for token in tokens]
+
+
+def decode(tokens, int_to_str_map):
+    """take list of int tokens and return list of str tokens"""
+    return [int_to_str_map[token] for token in tokens]
+
+
 def evaluate_token_length(vocab, train_set, test_set):
     """Compare metrics of the segmentation between the train and test set"""
     train_set_segmented = test_bpe(vocab, train_set)
