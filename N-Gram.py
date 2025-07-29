@@ -27,37 +27,67 @@ def preprocess_corpus(corpus, lowercase=True, rm_whitespace=True):
 
 def n_gram(text, n):
     tokenized = text.split()
-    ngram_counts = defaultdict(int)
 
-    for i in range(len(tokenized) - n + 1):
-        ngram = tuple(tokenized[i:i + n])
-        ngram_counts[ngram] += 1
+    ngram_counts = Counter(
+        tuple(tokenized[i:i + n]) 
+        for i in range(len(tokenized) - n + 1)
+    )
+    return ngram_counts
 
-    return Counter(ngram_counts).most_common(10)
+'''
+def n_gram_prob(n_gram_data, query_tuple):
+
+    count = n_gram_data.values()
+    total = sum(n_gram_data.values())
+
+    ngram_prob = {
+        ngram: {
+            'probability': count / total
+        }
+        for ngram, count in n_gram_data.items()
+    }
+    return ngram_prob
+'''
+    
+def conditional_prob(text, n, query_tuple):
+    if len(query_tuple) != n:
+        raise ValueError("query_tuple length must match n")
+
+    ngram_data = n_gram(text, n)
+    prefix_data = n_gram(text, n - 1) if n > 1 else None
+
+    joint_count = ngram_data.get(query_tuple, 0)
+    
+    if n == 1:
+        total = sum(ngram_data.values())
+        return joint_count / total if total > 0 else 0.0
+    else:
+        prefix = query_tuple[:-1]
+        prefix_count = prefix_data.get(prefix, 0)
+        return joint_count / prefix_count if prefix_count > 0 else 0.0
 
 
 def main():
     # test corpus loading
-    corpus_filepath = r"corpora\shakespeare.txt"
+    corpus_filepath = r"C:\Users\acer\Downloads\shakespeare.txt"
     corpus = load_corpus(corpus_filepath, 300000)
     text = preprocess_corpus(corpus)
+    top_unigram = n_gram(text, 1)
     top_bigram = n_gram(text, 2)
     top_trigram = n_gram(text, 3)
     top_quadgram = n_gram(text, 4)
 
+    query_tuple = ('i', 'am')
+    # ngram_data = top_unigram
+    print(conditional_prob(text, 2, query_tuple))
 
-    print("Top 10 bigram:")
-    for ngram, count in top_bigram:
-        print(f"{ngram}: {count}")
+'''''
+    if query_tuple in ngram_data:
+        prob = ngram_data[query_tuple]['probability']
+        print(f"Probability of {query_tuple}: {prob}")
+    else:
+        print(f"{query_tuple} not found in the n-gram data.")
+'''
 
-    print("Top 10 trigram:")
-    for ngram, count in top_trigram:
-        print(f"{ngram}: {count}")
-    
-    print("Top 10 quadgram:")
-    for ngram, count in top_quadgram:
-        print(f"{ngram}: {count}")
-
-    
 if __name__ == "__main__":
     main()
