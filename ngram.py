@@ -1,6 +1,7 @@
 from collections import Counter
 from itertools import product
 import numpy as np
+from utils import load_corpus
 
 class NGram:
     def __init__(self, vocab, n=4, laplace_smoothing=True, interpolation=False, backoff=False, lambdas=None):
@@ -268,8 +269,17 @@ class NGram:
         return probability**(1/len(test)) 
     
 def test():
-    text = "this is a test sentence and this is a test text"
+    # paths
+    shakespeare_unclean_path = "./corpora/shakespeare.txt"
+    shakespeare_clean_path = "./corpora/Shakespeare_clean_full.txt"
+    shakespeare_train_path = "./corpora/Shakespeare_clean_train.txt"
+    shakespeare_test_path = "./corpora/Shakespeare_clean_test.txt"
+    sms_path = "./corpora/sms_clean.txt"
+    vocab_dir_path = "./data/"
 
+    # text = "this is a test sentence and this is a test text"
+    text = load_corpus(shakespeare_train_path, window_size=10000)
+    text = "this is a test sentence and this is a test text: " + text
     vocab = np.unique(text.split())
     print(f"vocab: {vocab}")
 
