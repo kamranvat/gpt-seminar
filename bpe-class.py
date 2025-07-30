@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import time
 import json
-from utils import FileUtils
+from utils import FileUtils, Paths
 
 
 class BPE:
@@ -155,7 +155,7 @@ class BPE:
         coverages = []
         matched_chars = []
         for n in range(1, max_n + 1):
-            t, coverage, m = self.test_bpe(vocab, test_set, min_token_length=n)
+            t, coverage, m = self.test(vocab, test_set, min_token_length=n)
             coverages.append(coverage)
             matched_chars.append(m)
 
@@ -178,8 +178,8 @@ class BPE:
 
     def evaluate_token_length(self, vocab, train_set, test_set):
         """Compare metrics of the segmentation between the train and test set"""
-        train_set_segmented = self.test_bpe(vocab, train_set)
-        test_set_segmented = self.test_bpe(vocab, test_set)
+        train_set_segmented = self.test(vocab, train_set)
+        test_set_segmented = self.test(vocab, test_set)
 
         train_lengths = [len(token) for token in train_set_segmented]
         test_lengths = [len(token) for token in test_set_segmented]
@@ -204,12 +204,9 @@ class BPE:
 
 def main():
     # paths
-    shakespeare_unclean_path = "./corpora/shakespeare.txt"
-    shakespeare_clean_path = "./corpora/Shakespeare_clean_full.txt"
-    shakespeare_train_path = "./corpora/Shakespeare_clean_train.txt"
-    shakespeare_test_path = "./corpora/Shakespeare_clean_test.txt"
-    sms_path = "./corpora/sms_clean.txt"
-    vocab_dir_path = "./data/"
+    shakespeare_train_path = Paths.shakespeare_clean_train
+    vocab_path = Paths.vocab_full_k250
+    vocab_dir_path = Paths.vocab_dir
 
     # params
     k = 20
@@ -218,12 +215,14 @@ def main():
 
     bpe_model = BPE(k=k, testset_ratio=testset_ratio)
 
-    corpus = FileUtils.load_corpus(shakespeare_train_path, n_chars)
-    test_set = FileUtils.extract_test_set(corpus, testset_ratio)
-    # test_set = FileUtils.load_corpus(sms_path, n_chars)
+    corpus = FileUtils().load_corpus(shakespeare_train_path, window_size=n_chars)
+    test_set = FileUtils().extract_test_set(corpus, testset_ratio)
+    # test_set = FileUtils().load_corpus(sms_path, window_size=n_chars)
 
     # test bpe
-    tokenized_corpus_list, vocab = BPE.train(corpus, k)
+    bpe = BPE(k=k, testset_ratio=testset_ratio)
+    bpe.set_vocab(FileUtils().load_vocab(vocab_path))
+    tokenized_corpus_list, vocab = bpe.train(corpus=corpus, k=k)
     print(vocab)
 
     # store vocab
@@ -231,8 +230,8 @@ def main():
     FileUtils.store_vocab(vocab, vocab_dir_path, vocab_name)
 
     # plots
-    bpe_model.plot_coverages(vocab, corpus, test_set, 20)
-    # bpe_model.evaluate_token_length(vocab, corpus, test_set)
+    bpe.plot_coverages(vocab, corpus, test_set, 20)
+    # bpe.evaluate_token_length(vocab, corpus, test_set)
 
 
 if __name__ == "__main__":
