@@ -15,6 +15,42 @@ class BPE:
         self.k = k
         self.testset_ratio = testset_ratio
         self.vocab = []
+        self.str_to_int_map = {}
+        self.int_to_str_map = {}
+
+    def set_vocab(self, vocab):
+        self.vocab = vocab
+        self.create_str_to_int_map(vocab)
+        self.create_int_to_str_map(vocab)
+
+    def load_vocab(self, filepath):
+        self.set_vocab(FileUtils.load_vocab(filepath))
+
+    def create_str_to_int_map(self, vocab):
+        """take the vocab and return a dict mapping tokens to indices"""
+        self.str_to_int_map = {token: i for i, token in enumerate(vocab)}
+        return self.str_to_int_map
+
+    def create_int_to_str_map(self, vocab):
+        """take the vocab and return a dict mapping indices to tokens"""
+        self.int_to_str_map = {i: token for i, token in enumerate(vocab)}
+        return self.int_to_str_map
+
+    def encode(self, tokens):
+        """take list of str tokens and return list of int tokens"""
+        if not self.str_to_int_map:
+            if not self.vocab:
+                raise ValueError("vocab is empty, cannot encode tokens.")
+            self.create_str_to_int_map(self.vocab)
+        return [self.str_to_int_map[token] for token in tokens]
+
+    def decode(self, tokens):
+        """take list of int tokens and return list of str tokens"""
+        if not self.int_to_str_map:
+            if not self.vocab:
+                raise ValueError("vocab is empty, cannot decode tokens.")
+            self.create_int_to_str_map(self.vocab)
+        return [self.int_to_str_map[token] for token in tokens]
 
     def get_unique_chars(self, corpus):
         """Get unique characters from the corpus (corpus as one str)."""
