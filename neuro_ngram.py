@@ -4,8 +4,17 @@ import torch.nn.functional as F
 import numpy as np
 import ast
 from itertools import product
+from utils import Paths
 
-from bpe import load_corpus, preprocess_corpus, create_str_to_int_map, create_int_to_str_map, encode, decode
+from bpe import (
+    load_corpus,
+    preprocess_corpus,
+    create_str_to_int_map,
+    create_int_to_str_map,
+    encode,
+    decode,
+)
+
 
 class NeuroNgram(nn.Module):
     def __init__(self, vocab, n=2):
@@ -18,7 +27,7 @@ class NeuroNgram(nn.Module):
     def forward(self, context, target=None):
 
         # expected one hot encoded target
-        logits = self.embedding(context) # shape: (batch, time, vocab)
+        logits = self.embedding(context)  # shape: (batch, time, vocab)
 
         # # reshape as required for loss
         # logits = torch.view()
@@ -45,14 +54,15 @@ class NeuroNgram(nn.Module):
         return x, y
 
 
-
 def test():
     # load  corpus
-    corpus = load_corpus("./corpora/Shakespeare_clean_train.txt", window_size=1000)
+    corpus_path = Paths.shakespeare_clean_train
+    corpus = load_corpus(corpus_path, window_size=1000)
     corpus = preprocess_corpus(corpus)
     # create model
 
-    with open('./data/vocab_full_k250.txt', 'r') as f:
+    vocab_path = Paths.vocab_full_k250
+    with open(vocab_path, "r") as f:
         list_string = f.read()
         vocab = ast.literal_eval(list_string)
 
@@ -68,7 +78,7 @@ def test():
     m = NeuroNgram(vocab=torch.tensor(encoded_vocab), n=3)
 
     corpus = encode(corpus[:1000], string_to_int)
-    print("corpus :10",corpus[:10])
+    print("corpus :10", corpus[:10])
 
     # test batching
     x, y = m.get_batch(corpus, 8, context_size=6)
@@ -78,5 +88,5 @@ def test():
     print(l.shape)
 
 
-test()
 
+test()
