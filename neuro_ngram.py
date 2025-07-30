@@ -3,8 +3,6 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import numpy as np
-import ast
-from itertools import product
 from utils import Paths
 from glob import glob
 from torch.utils.tensorboard import SummaryWriter
