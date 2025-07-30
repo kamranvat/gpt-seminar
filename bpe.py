@@ -17,7 +17,6 @@ import matplotlib.pyplot as plt
 import matplotlib
 import time
 import json
-from utils import load_corpus, store_vocab, load_vocab  
 
 def preprocess_corpus(corpus, lowercase=True, rm_whitespace=True):
     """Take the raw corpus and return the preprocessed corpus"""
@@ -92,11 +91,10 @@ def extract_test_set(corpus, percentage):
 
 
 def bpe(corpus, k):
-    start = time.time()
     vocab = list(get_unique_chars(corpus))
     corpus_list = split_corpus(corpus)
 
-    for i in range(0, k):
+    for i in tqdm(range(0, k), desc="Training"):
         t_l, t_r = get_most_frequent_pair(corpus_list)
         if t_l == None:
             print(f"[WARNING] Stopped merging at k = {i} - no more pairs available!")
@@ -104,19 +102,16 @@ def bpe(corpus, k):
         t_new = t_l + t_r
         vocab.append(t_new)
         corpus_list = replace_most_frequent_pair(corpus_list, t_new, t_l, t_r)
-    end = time.time()
-    timer = end - start
-    print(timer)
     return corpus_list, vocab
 
 
-def test_bpe(vocab, test_set, min_token_length=3):
+def test_bpe(vocab, test_set, min_token_length=3, tqdm_position=None):
     """Take a vocab and a test set (as str), run bpe, return information about the performance"""
     test_set = split_corpus(test_set)  # list of str
     valid_indices = list(range(0, len(test_set)))
     matched_indices = np.zeros_like(test_set, dtype=bool)
 
-    for token in vocab:
+    for token in tqdm(vocab, desc="Testing", position=tqdm_position):
         i = 0
         while i < len(valid_indices) - 1:
             l = valid_indices[i]
@@ -144,13 +139,32 @@ def test_bpe(vocab, test_set, min_token_length=3):
     )
 
 
+def _test_bpe_worker(args):
+    """Worker function for multiprocessing in evaluate function"""
+    vocab, test_set, n, position = args
+    t, coverage, m = test_bpe(
+        vocab, test_set, min_token_length=n, tqdm_position=position
+    )
+    return coverage, m
+
+
 def evaluate(vocab, test_set, max_n=3):
     # check percentage of text covered by all, and then with increasing n
     # all tokens of length >n
     coverages = []
     matched_chars = []
-    for n in range(1, max_n + 1):
-        t, coverage, m = test_bpe(vocab, test_set, min_token_length=n)
+
+    # arguments for worker processes
+    args_list = [(vocab, test_set, n, i) for i, n in enumerate(range(1, max_n + 1))]
+
+    # multiprocessing with min(cpu_cores, max_n) workers
+    num_workers = min(mp.cpu_count(), max_n)
+    print(f"Using {num_workers} worker(s)...")
+
+    with mp.Pool(num_workers) as pool:
+        results = pool.map(_test_bpe_worker, args_list)
+
+    for coverage, m in results:
         coverages.append(coverage)
         matched_chars.append(m)
 
@@ -205,25 +219,33 @@ def main():
     vocab_dir_path = "./data/"
 
     # params
-    k = 20
-    n_chars = 1000  # set to None to load full corpus
+    k = 750
+    n_chars = None  # set to None to load full corpus
     testset_ratio = 0.1  # how much of the full corpus to use as test
 
     corpus = load_corpus(shakespeare_train_path, n_chars)
     corpus = preprocess_corpus(corpus)
     test_set = extract_test_set(corpus, testset_ratio)
-    # test_set = load_corpus(sms_path, n_chars)
+    test_set = load_corpus(sms_path, n_chars)
 
     # test bpe
-    tokenized_corpus_list, vocab = bpe(corpus, k)
-    print(vocab)
+    # tokenized_corpus_list, vocab = bpe(corpus, k)
+    # print(vocab)
+
+    # load vocab instead of generating it
+    vocab = load_vocab("./data/vocab_full_k250.txt")
 
     # store vocab
-    vocab_name = f"vocab_n{n_chars}_k{k}.txt"
-    store_vocab(vocab, vocab_dir_path, vocab_name)
+    if n_chars:
+        vocab_name = f"vocab_n{n_chars}_k{k}.txt"
+    else:
+        vocab_name = f"vocab_full_k{k}.txt"
+    # prefix for sms corpus
+    # vocab_name = "sms_" + vocab_name
+    # store_vocab(vocab, vocab_dir_path, vocab_name)
 
     # plots
-    plot_coverages(vocab, corpus, test_set, 20)
+    plot_coverages(vocab, corpus, test_set, 10)
     # evaluate_token_length(vocab, corpus, test_set)
 
 
