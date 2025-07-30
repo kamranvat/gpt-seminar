@@ -19,6 +19,7 @@ import time
 import json
 from tqdm import tqdm
 import multiprocessing as mp
+from utils import Paths
 
 
 def load_corpus(filepath, window_size=None):
@@ -259,13 +260,8 @@ def evaluate_token_length(vocab, train_set, test_set):
 
 
 def main():
-    # paths
-    shakespeare_unclean_path = "./corpora/shakespeare.txt"
-    shakespeare_clean_path = "./corpora/Shakespeare_clean_full.txt"
-    shakespeare_train_path = "./corpora/Shakespeare_clean_train.txt"
-    shakespeare_test_path = "./corpora/Shakespeare_clean_test.txt"
-    sms_path = "./corpora/sms_clean.txt"
-    vocab_dir_path = "./data/"
+    shakespeare_train_path = Paths.shakespeare_clean_train
+    sms_path = Paths.sms_clean
 
     # params
     k = 750
