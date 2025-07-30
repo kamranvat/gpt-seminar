@@ -205,19 +205,20 @@ class BPE:
 def main():
     # paths
     shakespeare_train_path = Paths.shakespeare_clean_train
+    sms_path = Paths.sms_clean
     vocab_path = Paths.vocab_full_k250
     vocab_dir_path = Paths.vocab_dir
 
     # params
-    k = 20
-    n_chars = 1000  # set to None to load full corpus
+    k = 250
+    n_chars = 10000  # set to None to load full corpus
     testset_ratio = 0.1  # how much of the full corpus to use as test
 
     bpe_model = BPE(k=k, testset_ratio=testset_ratio)
 
     corpus = FileUtils().load_corpus(shakespeare_train_path, window_size=n_chars)
-    test_set = FileUtils().extract_test_set(corpus, testset_ratio)
-    # test_set = FileUtils().load_corpus(sms_path, window_size=n_chars)
+    # test_set = FileUtils().extract_test_set(corpus, testset_ratio)
+    test_set = FileUtils().load_corpus(sms_path, window_size=n_chars)
 
     # test bpe
     bpe = BPE(k=k, testset_ratio=testset_ratio)
@@ -230,7 +231,7 @@ def main():
     FileUtils.store_vocab(vocab, vocab_dir_path, vocab_name)
 
     # plots
-    bpe.plot_coverages(vocab, corpus, test_set, 20)
+    bpe.plot_coverages(vocab, corpus, test_set, 10)
     # bpe.evaluate_token_length(vocab, corpus, test_set)
 
 
