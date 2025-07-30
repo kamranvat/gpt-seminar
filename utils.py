@@ -1,5 +1,6 @@
 import json
 import random
+from pathlib import Path
 
 
 class FileUtils:
@@ -15,6 +16,7 @@ class FileUtils:
     ):
         """Load corpus from filepath, return as string. If window size is passed, return subset of that size."""
         corpus = ""
+        filepath = str(filepath)
         if window_size:
             with open(filepath, "r") as f:
                 corpus = f.read(window_size)
@@ -44,13 +46,18 @@ class FileUtils:
     @staticmethod
     def store_vocab(vocab, filepath, name):
         """Store generated vocab"""
-        filepath = filepath + name
+        name = Path(name)
+        if not name.suffix:
+            name = name.with_suffix(".txt")
+        filepath = filepath / name
+        filepath = str(filepath)
         with open(filepath, "w") as f:
             json.dump(vocab, f)
 
     @staticmethod
     def load_vocab(filepath):
         """Load vocab from file"""
+        filepath = str(filepath)
         with open(filepath, "r") as f:
             vocab = json.load(f)
         return vocab
@@ -61,3 +68,27 @@ class FileUtils:
         n_words = int(percentage * len(split_corpus))
         split_corpus = random.sample(split_corpus, n_words)
         return " ".join(split_corpus)
+
+
+# import paths by importing utils paths.path
+class Paths:
+    """A class to hold paths for various datasets and vocabularies."""
+
+    corpus_dir = Path("./corpora/")
+    shakespeare_unclean = corpus_dir / "shakespeare.txt"
+    shakespeare_clean_full = corpus_dir / "Shakespeare_clean_full.txt"
+    shakespeare_clean_train = corpus_dir / "Shakespeare_clean_train.txt"
+    shakespeare_clean_test = corpus_dir / "Shakespeare_clean_test.txt"
+    shakespeare_clean_valid = corpus_dir / "Shakespeare_clean_valid.txt"
+    sms_clean = corpus_dir / "sms_clean.txt"
+    sms = corpus_dir / "sms.txt"
+    vocab_dir = Path("./data/")
+    sms_vocab_full_k250 = vocab_dir / "sms_vocab_full_k250.txt"
+    sms_vocab_full_k500 = vocab_dir / "sms_vocab_full_k500.txt"
+    sms_vocab_full_k750 = vocab_dir / "sms_vocab_full_k750.txt"
+    vocab_full_k250 = vocab_dir / "vocab_full_k250.txt"
+    vocab_full_k500 = vocab_dir / "vocab_full_k500.txt"
+    vocab_full_k750 = vocab_dir / "vocab_full_k750.txt"
+    vocab_full_k1000 = vocab_dir / "vocab_full_k1000.txt"
+    vocab_full_k1250 = vocab_dir / "vocab_full_k1250.txt"
+    vocab_full_k1500 = vocab_dir / "vocab_full_k1500.txt"
