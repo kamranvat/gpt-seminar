@@ -1,14 +1,3 @@
-"""
-    task: look for a few different k's
-            - observe when we reach the sweet spot of subword len = ca. word len
-                (- actually not the real sweet spot cause you lose compositionality already here)
-        - normalize
-        - make a randomly selected test set and report the difference between test set and another test set (ie some wikipedia article or sth).
-        - visualize this somehow
-    - chars that can not be matched at all are counted as fail
-- split 99/1 - norm (diff strats) - compare
-"""
-
 from collections import Counter
 from itertools import filterfalse
 import random
@@ -17,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import time
 import json
+from utils import FileUtils
 
 
 class BPE:
@@ -25,48 +15,10 @@ class BPE:
         self.k = k
         self.testset_ratio = testset_ratio
         self.vocab = []
-        
-    def load_corpus(self, filepath, window_size=None):
-        """Load corpus from filepath, return as string. If window size is passed, return subset of that size."""
-        corpus = ""
-        if window_size:
-            with open(filepath, "r") as f:
-                corpus = f.read(window_size)
-        else:
-            with open(filepath, "r") as f:
-                corpus = f.read()
-        return corpus
-
-    def store_vocab(self, vocab, filepath, name):
-        """Store generated vocab"""
-        filepath = filepath + name
-        with open(filepath, "w") as f:
-            json.dump(vocab, f)
-
-    def load_vocab(self, filepath):
-        """Load vocab from file"""
-        with open(filepath, "r") as f:
-            vocab = json.load(f)
-        return vocab
-
-    def preprocess_corpus(self, corpus, lowercase=True, rm_whitespace=True):
-        """Take the raw corpus and return the preprocessed corpus"""
-        # TODO: add regex things in here
-        if rm_whitespace:
-            corpus = " ".join(corpus.split())
-        if lowercase:
-            corpus = (
-                corpus.casefold()
-            )  # casefold instead of lower for better handling of weird chars
-        return corpus
 
     def get_unique_chars(self, corpus):
         """Get unique characters from the corpus (corpus as one str)."""
         return set(corpus)
-
-    def split_corpus(self, corpus):  # TODO rename or replace
-        """Return the corpus as list of strings to prepare for further processing"""
-        return list(corpus)
 
     def get_most_frequent_pair(self, corpus):
         """Return the most frequent pair of neighboring tokens in corpus"""
@@ -107,22 +59,17 @@ class BPE:
                     new_corpus.append(corpus[i])
         return new_corpus
 
-    def extract_test_set(self, corpus, percentage):
-        """Return randomly sampled test set of size percentage*wordcount as str"""
-        split_corpus = corpus.split()
-        n_words = int(percentage * len(split_corpus))
-        split_corpus = random.sample(split_corpus, n_words)
-        return " ".join(split_corpus)
-
-    def bpe(self, corpus, k):
+    def train(self, corpus, k):
         start = time.time()
         vocab = list(self.get_unique_chars(corpus))
-        corpus_list = self.split_corpus(corpus)
+        corpus_list = list(corpus)
 
         for i in range(0, k):
             t_l, t_r = self.get_most_frequent_pair(corpus_list)
             if t_l == None:
-                print(f"[WARNING] Stopped merging at k = {i} - no more pairs available!")
+                print(
+                    f"[WARNING] Stopped merging at k = {i} - no more pairs available!"
+                )
                 break
             t_new = t_l + t_r
             vocab.append(t_new)
@@ -133,9 +80,9 @@ class BPE:
         self.vocab = vocab
         return corpus_list, vocab
 
-    def test_bpe(self, vocab, test_set, min_token_length=3):
+    def test(self, vocab, test_set, min_token_length=3):
         """Take a vocab and a test set (as str), run bpe, return information about the performance"""
-        test_set = self.split_corpus(test_set)  # list of str
+        test_set = list(test_set)  # list of str
         valid_indices = list(range(0, len(test_set)))
         matched_indices = np.zeros_like(test_set, dtype=bool)
 
@@ -204,8 +151,12 @@ class BPE:
         plt.figure(figsize=(12, 6))
         plt.hist(train_lengths, bins=30, alpha=0.5, label="Train Set")
         plt.hist(test_lengths, bins=30, alpha=0.5, label="Test Set")
-        plt.axvline(np.mean(train_lengths), color="blue", linestyle="dashed", linewidth=1)
-        plt.axvline(np.mean(test_lengths), color="orange", linestyle="dashed", linewidth=1)
+        plt.axvline(
+            np.mean(train_lengths), color="blue", linestyle="dashed", linewidth=1
+        )
+        plt.axvline(
+            np.mean(test_lengths), color="orange", linestyle="dashed", linewidth=1
+        )
         plt.legend()
         plt.title("Token Length Distribution")
         plt.xlabel("Token Length")
@@ -230,19 +181,18 @@ def main():
     testset_ratio = 0.1  # how much of the full corpus to use as test
 
     bpe_model = BPE(k=k, testset_ratio=testset_ratio)
-    
-    corpus = bpe_model.load_corpus(shakespeare_train_path, n_chars)
-    corpus = bpe_model.preprocess_corpus(corpus)
-    test_set = bpe_model.extract_test_set(corpus, testset_ratio)
-    # test_set = bpe_model.load_corpus(sms_path, n_chars)
+
+    corpus = FileUtils.load_corpus(shakespeare_train_path, n_chars)
+    test_set = FileUtils.extract_test_set(corpus, testset_ratio)
+    # test_set = FileUtils.load_corpus(sms_path, n_chars)
 
     # test bpe
-    tokenized_corpus_list, vocab = bpe_model.bpe(corpus, k)
+    tokenized_corpus_list, vocab = BPE.train(corpus, k)
     print(vocab)
 
     # store vocab
     vocab_name = f"vocab_n{n_chars}_k{k}.txt"
-    bpe_model.store_vocab(vocab, vocab_dir_path, vocab_name)
+    FileUtils.store_vocab(vocab, vocab_dir_path, vocab_name)
 
     # plots
     bpe_model.plot_coverages(vocab, corpus, test_set, 20)
