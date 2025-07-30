@@ -100,7 +100,7 @@ class NeuroNgram(nn.Module):
         return c%self.vocab_size
 
 
-def train(model, data, writer, batch_size=16, context_size=8, steps=10, validation_data=None, validate_every_x=1, patience=5):
+def train(model, data, writer, batch_size=16, context_size=8, steps=10, validation_data=None, validate_every_x=1, patience=5, model_save_dir = "models", save_top_k=None):
 
     steps_without_validation_improvement = 0
     best_valid_loss = torch.inf
@@ -120,7 +120,6 @@ def train(model, data, writer, batch_size=16, context_size=8, steps=10, validati
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         optimizer.step()
-        save_dir = "models"
 
         # run validation
         if validation_data is not None and step%validate_every_x==0:
@@ -134,7 +133,20 @@ def train(model, data, writer, batch_size=16, context_size=8, steps=10, validati
             # check whether loss improved
             if loss < best_valid_loss:
                 best_valid_loss = loss    
-                model.save(model.state_dict(), os.path.join(save_dir, f"step_{step}_loss_{loss}"))
+                model.save(model.state_dict(), os.path.join(model_save_dir, f"step_{step}_loss_{loss}"))
+
+                # optionally delete oldest model
+                if save_top_k is not None:
+                    # match models
+                    files =  glob(os.path.join(model_save_dir, f"step_"))
+                    if len(files) > save_top_k:
+                        extract_steps = lambda x: int(x.split('_'))[0]
+                        file_steps = file_steps = [extract_steps(f) for f in files]
+                        oldest_index = np.argmin(file_steps)
+                        # delete oldest model
+                        logger.info(f"Max number of past model weights to keep reached ({save_top_k}), deleting oldes file: {files[oldest_index]}")
+                        os.remove(files[oldest_index])
+
 
             else:
                 steps_without_validation_improvement += 1
@@ -143,23 +155,27 @@ def train(model, data, writer, batch_size=16, context_size=8, steps=10, validati
                 # early stopping
                 logger.info(f"Early stopping triggered at step {step}, reverting back to step {step-patience}")
                 # match path
-                best_path = glob(os.path.join(save_dir, f"step_{step-patience}_"))[0]
+                best_path = glob(os.path.join(model_save_dir, f"step_{step-patience}_"))[0]
                 model.load_state_dict(torch.load(best_path, weights_only=True))
                 break
 
             
 def main():
-    # params
+    ############### define parameters ####################
     n = 3
     context_size = 6
     batch_size = 16
-    n_chars_corpus = 1000  # None for full
     patience = 5 # stop early if validation loss has not improved for this number of times
     validate_every_x = 1  # run validation every x steps
+    steps = 100000
+    model_save_dir = "models"
+
+    n_chars_corpus = 1000  # None for full
+    ############### parameters end #######################
 
     writer = SummaryWriter()
 
-    # load  corpus
+    # load corpus
     corpus_path = Paths.shakespeare_clean_train
     corpus = load_corpus(corpus_path, window_size=n_chars_corpus)
     corpus = preprocess_corpus(corpus)
@@ -198,10 +214,11 @@ def main():
         writer=writer, 
         batch_size=batch_size, 
         context_size=context_size, 
-        steps=1000,
+        steps=steps,
         # validation_data=
         validate_every_x=validate_every_x,
-        patience=patience
+        patience=patience,
+        model_save_dir=model_save_dir,
         )
 
     o = m.predict(context)
