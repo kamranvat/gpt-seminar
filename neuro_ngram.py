@@ -25,17 +25,19 @@ class NeuroNgram(nn.Module):
         self.embedding = nn.Embedding(self.vocab_size*self.vocab_size, self.vocab_size)
     
     def forward(self, context, target=None):
-
         # expected one hot encoded target
         logits = self.embedding(context)  # shape: (batch, time, vocab)
 
-        # # reshape as required for loss
-        # logits = torch.view()
+        # reshape as required for loss
+        batch_size, context_size, vocab_size = logits.shape
+        logits_view = logits.view(batch_size*context_size, vocab_size)
+        targets_view = target.view(batch_size*context_size)
 
-        # loss = F.cross_entropy(logits, target)
-        return logits
+        loss = F.cross_entropy(logits_view, targets_view)
+        return logits, loss
 
-    def predict(self, context):
+    def predict(self, context, max_tokens=50):
+
         pass
 
 
@@ -84,8 +86,9 @@ def test():
     x, y = m.get_batch(corpus, 8, context_size=6)
     print(x.shape, y.shape)
 
-    l = m(x, y)
+    l, loss = m(x, y)
     print(l.shape)
+    print("loss", loss)
 
 
 
