@@ -30,9 +30,23 @@
 ## Introduction
 Briefly introduce the project, its goals, and the overall structure of the report.
 
+## Task 0: Text Preprocessing
+Put the unix commands and their python equivalents described on the lecture slides here.
+
 ## Task 1: Data Preparation and Segmentation with BPE
 ### 1.1 Data Splitting
 Describe the process of splitting the Shakespeare dataset into training and test sets.
+
+```python
+>>> print(len(shakespeare))
+4941133
+>>> print(len(Shakespeare_clean_full))
+1041007
+>>> print(len(shakespeare.split()()))
+901325
+>>> print(len(Shakespeare_clean_full.split()))
+190999
+```
 
 ### 1.2 Segmenter Training
 Explain the training of the segmenter, including different values of k and normalization strategies.
@@ -42,6 +56,9 @@ Discuss how performance was compared across different settings and datasets.
 
 ### 1.4 Accuracy Measurement
 Detail the chosen accuracy metric and its justification.
+
+Figure showing the coverage of the vocabulary with respect to the token length for different corpora: 
+![Coverage of Vocabulary](coverage_n10000_k250.png)
 
 ## Task 2: N-gram Engine with BPE
 ### 2.1 Data Usage and Splitting
@@ -90,4 +107,9 @@ Interpret the results, discuss challenges, and suggest possible improvements.
 Provide a brief conclusion and potential future work.
 
 ## References
-List any references, datasets, or external resources used.
+
+**Shakespeare Dataset**  
+The Complete Works of William Shakespeare. (n.d.). Project Gutenberg. https://www.gutenberg.org/ebooks/100
+
+**SMS Spam Collection Dataset**  
+Almeida, T. A., Hidalgo, J. M. G., & Yamakami, A. (2011). SMS Spam Collection v.1. UCI Machine Learning Repository. https://archive.ics.uci.edu/ml/datasets/SMS+Spam+Collection
