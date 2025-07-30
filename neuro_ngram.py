@@ -32,7 +32,7 @@ class NeuroNgram(nn.Module):
         self.vocab = vocab
         self.vocab_size = len(vocab)
         self.embedding = nn.Embedding(
-            self.vocab_size * self.vocab_size, self.vocab_size
+            self.vocab_size ** self.n, self.vocab_size
         )
 
     def forward(self, context, target=None):
