@@ -1,3 +1,4 @@
+import os
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -5,6 +6,14 @@ import numpy as np
 import ast
 from itertools import product
 from utils import Paths
+from glob import glob
+from torch.utils.tensorboard import SummaryWriter
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger()
 
 from bpe import (
     load_corpus,
@@ -13,7 +22,9 @@ from bpe import (
     create_int_to_str_map,
     encode,
     decode,
+    load_vocab
 )
+
 
 
 class NeuroNgram(nn.Module):
@@ -33,9 +44,11 @@ class NeuroNgram(nn.Module):
         # reshape as required for loss
         batch_size, context_size, vocab_size = logits.shape
         logits_view = logits.view(batch_size * context_size, vocab_size)
-        targets_view = target.view(batch_size * context_size)
+        loss = None
+        if target is not None:
+            targets_view = target.view(batch_size * context_size)
+            loss = F.cross_entropy(logits_view, targets_view)
 
-        loss = F.cross_entropy(logits_view, targets_view)
         return logits, loss
 
     def predict(self, context, max_new_tokens=50):
@@ -75,46 +88,125 @@ class NeuroNgram(nn.Module):
         context = [data[j : j + context_size + self.n] for j in start_indices]
         return x, y
 
+    def encode(self, c):
+        # expects c to be the context as tensor of shape (batch_size, context_window, n-1)
+        for n in range(0, self.n - 2):
+            c[:, :, n] *= self.vocab_size
 
-def test():
+        # sum up
+        return torch.sum(c, dim=-1)
+    
+    def decode(self, c):
+        return c%self.vocab_size
+
+
+def train(model, data, writer, batch_size=16, context_size=8, steps=10, validation_data=None, validate_every_x=1, patience=5):
+
+    steps_without_validation_improvement = 0
+    best_valid_loss = torch.inf
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+
+    for step in range(steps):
+        # get batch
+        x, y = model.get_batch(data=data, batch_size=batch_size, context_size=context_size)
+
+        # perform one forward step
+        logits, loss = model(x, y)
+        writer.add_scalar("Loss/train", loss, step)
+
+        # optimize with loss
+        # zero previous gradients
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        optimizer.step()
+        save_dir = "models"
+
+        # run validation
+        if validation_data is not None and step%validate_every_x==0:
+            # get batch
+            x, y = model.get_batch(data=validation_data, batch_size=batch_size, context_size=context_size)
+
+            # perform one step
+            _, loss = model(x, y)
+            writer.add_scalar("Loss/valid", loss, step)
+
+            # check whether loss improved
+            if loss < best_valid_loss:
+                best_valid_loss = loss    
+                model.save(model.state_dict(), os.path.join(save_dir, f"step_{step}_loss_{loss}"))
+
+            else:
+                steps_without_validation_improvement += 1
+            
+            if steps_without_validation_improvement >= patience:
+                # early stopping
+                logger.info(f"Early stopping triggered at step {step}, reverting back to step {step-patience}")
+                # match path
+                best_path = glob(os.path.join(save_dir, f"step_{step-patience}_"))[0]
+                model.load_state_dict(torch.load(best_path, weights_only=True))
+                break
+
+            
+def main():
     # params
     n = 3
     context_size = 6
     batch_size = 16
     n_chars_corpus = 1000  # None for full
+    patience = 5 # stop early if validation loss has not improved for this number of times
+    validate_every_x = 1  # run validation every x steps
+
+    writer = SummaryWriter()
 
     # load  corpus
     corpus_path = Paths.shakespeare_clean_train
     corpus = load_corpus(corpus_path, window_size=n_chars_corpus)
     corpus = preprocess_corpus(corpus)
-    # create model
-
+  
     vocab_path = Paths.vocab_full_k250
-    with open(vocab_path, "r") as f:
-        list_string = f.read()
-        vocab = ast.literal_eval(list_string)
-
-    # corpus = corpus.lower()
-    # print("vocab", vocab)
+    vocab = load_vocab(vocab_path)
 
     string_to_int = create_str_to_int_map(vocab)
     int_to_string = create_int_to_str_map(vocab)
-    print("string to int", string_to_int)
     encoded_vocab = encode(vocab, string_to_int)
-    print(f"vocab size {len(vocab)}, encoded shape {len(encoded_vocab)}")
-    print("vocab shape", torch.tensor(encoded_vocab).shape)
     m = NeuroNgram(vocab=torch.tensor(encoded_vocab), n=n)
 
     corpus = encode(corpus[:1000], string_to_int)
-    print("corpus :10", corpus[:10])
+    logger.debug("corpus len", len(corpus))
 
     # test batching
     x, y = m.get_batch(corpus, batch_size=batch_size, context_size=context_size)
-    print(x.shape, y.shape)
+    logger.debug(x.shape, y.shape)
 
     l, loss = m(x, y)
-    print(l.shape)
-    print("loss", loss)
+    logger.debug(l.shape)
+    logger.debug("loss", loss)
+
+    context = torch.unsqueeze(torch.unsqueeze(torch.tensor(corpus[:2]), 0), 0)
+
+    context = m.encode(context)
+
+    o = m.predict(context)
+    # need to decode each sequence in batch separately
+    logger.debug(decode(m.decode(o)[0].tolist(), int_to_string))
+
+    # train model
+    train(
+        m, 
+        data=corpus, 
+        writer=writer, 
+        batch_size=batch_size, 
+        context_size=context_size, 
+        steps=1000,
+        # validation_data=
+        validate_every_x=validate_every_x,
+        patience=patience
+        )
+
+    o = m.predict(context)
+    # need to decode each sequence in batch separately
+    logger.debug(decode(m.decode(o)[0].tolist(), int_to_string))
 
 
-test()
+main()
