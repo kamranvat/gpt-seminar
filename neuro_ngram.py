@@ -37,8 +37,19 @@ class NeuroNgram(nn.Module):
         # loss = F.cross_entropy(logits, target)
         return logits
 
-    def predict(self, context):
-        pass
+    def predict(self, context, max_new_tokens=50):
+        for _ in range(max_new_tokens):
+            # predict (fwd pass)
+            logits, loss = self(context)
+            # look at last timestep
+            logits = logits[:, -1, :]  # logits is now [batchsize, vocab_len]
+            # softmax for probs
+            probs = F.softmax(logits, dim=-1)
+            # sample
+            next_context = torch.multinomial(probs, num_samples=1)  # [batchsize, 1]
+            # append sampled to sequence
+            context = torch.cat((context, next_context), dim=1)  # [batchsize, t+1]
+        return context
 
     def get_batch(self, data, batch_size, context_size):
         start_indices = torch.randint(
@@ -68,8 +79,8 @@ def test():
     # params
     n = 3
     context_size = 6
-    batch_size = 8
-    n_chars_corpus = 1000
+    batch_size = 16
+    n_chars_corpus = 1000  # None for full
 
     # load  corpus
     corpus_path = Paths.shakespeare_clean_train
