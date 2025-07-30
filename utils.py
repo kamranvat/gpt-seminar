@@ -46,8 +46,11 @@ class FileUtils:
     @staticmethod
     def store_vocab(vocab, filepath, name):
         """Store generated vocab"""
+        name = Path(name)
+        if not name.suffix:
+            name = name.with_suffix(".txt")
+        filepath = filepath / name
         filepath = str(filepath)
-        filepath = filepath + name
         with open(filepath, "w") as f:
             json.dump(vocab, f)
 
