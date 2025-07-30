@@ -22,8 +22,10 @@ class NeuroNgram(nn.Module):
         self.n = n
         self.vocab = vocab
         self.vocab_size = len(vocab)
-        self.embedding = nn.Embedding(self.vocab_size*self.vocab_size, self.vocab_size)
-    
+        self.embedding = nn.Embedding(
+            self.vocab_size * self.vocab_size, self.vocab_size
+        )
+
     def forward(self, context, target=None):
 
         # expected one hot encoded target
@@ -38,26 +40,40 @@ class NeuroNgram(nn.Module):
     def predict(self, context):
         pass
 
-
     def get_batch(self, data, batch_size, context_size):
-        start_indices = torch.randint(low=0, high=(len(data)-(context_size+self.n)), size=(batch_size,))
-        context_start_indices = [data[j:j+context_size+self.n-2] for j in start_indices]
+        start_indices = torch.randint(
+            low=0, high=(len(data) - (context_size + self.n)), size=(batch_size,)
+        )
+        context_start_indices = [
+            data[j : j + context_size + self.n - 2] for j in start_indices
+        ]
         c = torch.tensor(context_start_indices).unfold(1, 2, 1)
         # need to multiply first value with vocab size and then sum along last axis
-        for n in range(0, self.n-2):
-            c[:,:,n] *= self.vocab_size
+        for n in range(0, self.n - 2):
+            c[:, :, n] *= self.vocab_size
 
         # sum up
         x = torch.sum(c, dim=-1)
-        y = torch.stack([torch.tensor(data[i+self.n-1:i+self.n+context_size-1]) for i in start_indices])
-        context = [data[j:j+context_size+self.n] for j in start_indices]
+        y = torch.stack(
+            [
+                torch.tensor(data[i + self.n - 1 : i + self.n + context_size - 1])
+                for i in start_indices
+            ]
+        )
+        context = [data[j : j + context_size + self.n] for j in start_indices]
         return x, y
 
 
 def test():
+    # params
+    n = 3
+    context_size = 6
+    batch_size = 8
+    n_chars_corpus = 1000
+
     # load  corpus
     corpus_path = Paths.shakespeare_clean_train
-    corpus = load_corpus(corpus_path, window_size=1000)
+    corpus = load_corpus(corpus_path, window_size=n_chars_corpus)
     corpus = preprocess_corpus(corpus)
     # create model
 
@@ -75,18 +91,17 @@ def test():
     encoded_vocab = encode(vocab, string_to_int)
     print(f"vocab size {len(vocab)}, encoded shape {len(encoded_vocab)}")
     print("vocab shape", torch.tensor(encoded_vocab).shape)
-    m = NeuroNgram(vocab=torch.tensor(encoded_vocab), n=3)
+    m = NeuroNgram(vocab=torch.tensor(encoded_vocab), n=n)
 
     corpus = encode(corpus[:1000], string_to_int)
     print("corpus :10", corpus[:10])
 
     # test batching
-    x, y = m.get_batch(corpus, 8, context_size=6)
+    x, y = m.get_batch(corpus, batch_size=batch_size, context_size=context_size)
     print(x.shape, y.shape)
 
     l = m(x, y)
     print(l.shape)
-
 
 
 test()
