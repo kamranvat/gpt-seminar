@@ -24,7 +24,8 @@ class BPE:
         self.create_int_to_str_map(vocab)
 
     def load_vocab(self, filepath):
-        self.set_vocab(FileUtils.load_vocab(filepath))
+        fu = FileUtils()
+        self.set_vocab(fu.load_vocab(filepath))
 
     def create_str_to_int_map(self, vocab):
         """take the vocab and return a dict mapping tokens to indices"""

@@ -7,22 +7,14 @@ from utils import Paths
 from glob import glob
 from torch.utils.tensorboard import SummaryWriter
 import logging
+from bpe_class import BPE
+from utils import FileUtils
+from torcheval.metrics.text import Perplexity
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
-
-from bpe import (
-    load_corpus,
-    preprocess_corpus,
-    create_str_to_int_map,
-    create_int_to_str_map,
-    encode,
-    decode,
-    load_vocab
-)
-
 
 
 class NeuroNgram(nn.Module):
@@ -32,7 +24,7 @@ class NeuroNgram(nn.Module):
         self.vocab = vocab
         self.vocab_size = len(vocab)
         self.embedding = nn.Embedding(
-            self.vocab_size ** self.n, self.vocab_size
+            self.vocab_size ** (self.n-1), self.vocab_size
         )
 
     def forward(self, context, target=None):
@@ -98,14 +90,18 @@ class NeuroNgram(nn.Module):
         return c%self.vocab_size
 
 
-def train(model, data, writer, batch_size=16, context_size=8, steps=10, validation_data=None, validate_every_x=1, patience=5, model_save_dir = "models", save_top_k=None):
+def train(model, data, writer, optimizer=None, batch_size=16, context_size=8, steps=10, validation_data=None, validate_every_x=1, patience=5, model_save_dir = "models", save_top_k=None):
 
     steps_without_validation_improvement = 0
     best_valid_loss = torch.inf
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    os.makedirs(model_save_dir, exist_ok=True)
+
+    if optimizer is None:
+        optimizer = torch.optim.Adam(model.parameters())
 
     for step in range(steps):
+        logger.debug(f"step {step}")
         # get batch
         x, y = model.get_batch(data=data, batch_size=batch_size, context_size=context_size)
 
@@ -131,15 +127,16 @@ def train(model, data, writer, batch_size=16, context_size=8, steps=10, validati
             # check whether loss improved
             if loss < best_valid_loss:
                 best_valid_loss = loss    
-                model.save(model.state_dict(), os.path.join(model_save_dir, f"step_{step}_loss_{loss}"))
+                torch.save(model.state_dict(), os.path.join(model_save_dir, f"step_{step}_loss_{loss}"))
 
                 # optionally delete oldest model
                 if save_top_k is not None:
                     # match models
-                    files =  glob(os.path.join(model_save_dir, f"step_"))
+                    files = glob(os.path.join(model_save_dir, f"step_*"))
+                    print(files)
                     if len(files) > save_top_k:
-                        extract_steps = lambda x: int(x.split('_'))[0]
-                        file_steps = file_steps = [extract_steps(f) for f in files]
+                        extract_steps = lambda x: int(x.split('_')[2])
+                        file_steps = [extract_steps(f) for f in files]
                         oldest_index = np.argmin(file_steps)
                         # delete oldest model
                         logger.info(f"Max number of past model weights to keep reached ({save_top_k}), deleting oldes file: {files[oldest_index]}")
@@ -157,71 +154,108 @@ def train(model, data, writer, batch_size=16, context_size=8, steps=10, validati
                 model.load_state_dict(torch.load(best_path, weights_only=True))
                 break
 
+def evaluate(test_set):
+    metric=Perplexity()
+    x,y = None
+    metric.update(x, y)
+    perplexity = metric.compute()
+    logger.info(f"perplexity {perplexity}")
+    return perplexity
+
+def generate_example(m, bpe, corpus):
+    context = torch.unsqueeze(torch.unsqueeze(torch.tensor(corpus[:2]), 0), 0)
+    context = m.encode(context)
+    o = m.predict(context)
+    # need to decode each sequence in batch separately
+    logger.info(f"generated example: {''.join(bpe.decode(m.decode(o)[0].tolist()))}")
             
 def main():
     ############### define parameters ####################
     n = 3
     context_size = 6
-    batch_size = 16
+    batch_size = 4
     patience = 5 # stop early if validation loss has not improved for this number of times
     validate_every_x = 1  # run validation every x steps
-    steps = 100000
+    steps = 3
     model_save_dir = "models"
-
-    n_chars_corpus = 1000  # None for full
     ############### parameters end #######################
 
-    writer = SummaryWriter()
-
     # load corpus
-    corpus_path = Paths.shakespeare_clean_train
-    corpus = load_corpus(corpus_path, window_size=n_chars_corpus)
-    corpus = preprocess_corpus(corpus)
+    file_utils = FileUtils()
+    train_corpus = file_utils.load_corpus(Paths.shakespeare_clean_train)
+    test_corpus = file_utils.load_corpus(Paths.shakespeare_clean_test)
+    valid_corpus = file_utils.load_corpus(Paths.shakespeare_clean_valid)
   
-    vocab_path = Paths.vocab_full_k250
-    vocab = load_vocab(vocab_path)
+    # test different ks
+    ks = [250, 500, 750, 1000, 1250, 1500]
+    
+    # optimizer hyperparameters
+    optimizer_hyperparameters = [
+        {},
+        # {'momentum': []},
+        {'learning_rate': [1e-6, 1e-5, 1e-4, 1e-3, 1e-2]},
+        {'learning_rate': [1e-6, 1e-5, 1e-4, 1e-3, 1e-2]},
+    ]
 
-    string_to_int = create_str_to_int_map(vocab)
-    int_to_string = create_int_to_str_map(vocab)
-    encoded_vocab = encode(vocab, string_to_int)
-    m = NeuroNgram(vocab=torch.tensor(encoded_vocab), n=n)
 
-    corpus = encode(corpus[:1000], string_to_int)
-    logger.debug("corpus len", len(corpus))
+    for k in ks:
+        logger.info(f"Starting run for k {k}")
+        for i in range(12):
+            logger.info(f"Starting run for optimizer {i}")
+            writer = SummaryWriter(comment=f"k_{k}_i_{i}")
+            bpe = BPE(k=k)
 
-    # test batching
-    x, y = m.get_batch(corpus, batch_size=batch_size, context_size=context_size)
-    logger.debug(x.shape, y.shape)
+            vocab_path = os.path.join("data", f"vocab_full_k{k}.txt")
+            bpe.load_vocab(vocab_path)
+            vocab = bpe.vocab
+            logger.info("loaded vocab")
+            encoded_vocab = bpe.encode(vocab)
+            logger.info("encoded vocab")
+            encoded_train = bpe.encode(train_corpus)
+            logger.info("encoded train")
+            encoded_test = bpe.encode(test_corpus)
+            logger.info("encoded test")
+            encoded_valid = bpe.encode(valid_corpus)
+            logger.info("encoded valid")
 
-    l, loss = m(x, y)
-    logger.debug(l.shape)
-    logger.debug("loss", loss)
+            m = NeuroNgram(vocab=torch.tensor(encoded_vocab), n=n)
+            logger.info("created model")
+            optimizers = [torch.optim.SGD(m.parameters()),
+                  torch.optim.SGD(m.parameters(), momentum=0.9),
+                  torch.optim.Adam(m.parameters(), lr=1e-6),
+                  torch.optim.Adam(m.parameters(), lr=1e-5), 
+                  torch.optim.Adam(m.parameters(), lr=1e-4),
+                  torch.optim.Adam(m.parameters(), lr=1e-3),
+                  torch.optim.Adam(m.parameters(), lr=1e-2),
+                  torch.optim.AdamW(m.parameters(), lr=1e-6),
+                  torch.optim.AdamW(m.parameters(), lr=1e-5), 
+                  torch.optim.AdamW(m.parameters(), lr=1e-4),
+                  torch.optim.AdamW(m.parameters(), lr=1e-3),
+                  torch.optim.AdamW(m.parameters(), lr=1e-2),
+                  ] # could also add , torch.optim.RMSprop
+            
+            logger.info("created optimizers")
+            optimizer = optimizers[i]
 
-    context = torch.unsqueeze(torch.unsqueeze(torch.tensor(corpus[:2]), 0), 0)
+            generate_example(m, bpe, encoded_valid)
 
-    context = m.encode(context)
-
-    o = m.predict(context)
-    # need to decode each sequence in batch separately
-    logger.debug(decode(m.decode(o)[0].tolist(), int_to_string))
-
-    # train model
-    train(
-        m, 
-        data=corpus, 
-        writer=writer, 
-        batch_size=batch_size, 
-        context_size=context_size, 
-        steps=steps,
-        # validation_data=
-        validate_every_x=validate_every_x,
-        patience=patience,
-        model_save_dir=model_save_dir,
-        )
-
-    o = m.predict(context)
-    # need to decode each sequence in batch separately
-    logger.debug(decode(m.decode(o)[0].tolist(), int_to_string))
+            # train model
+            train(
+                m, 
+                data=encoded_train, 
+                writer=writer, 
+                optimizer=optimizer,
+                batch_size=batch_size, 
+                context_size=context_size, 
+                steps=steps,
+                validation_data=encoded_valid,
+                validate_every_x=validate_every_x,
+                patience=patience,
+                model_save_dir=os.path.join(f"{model_save_dir}", f"{k}_{i}"),
+                save_top_k=1
+                )
+            
+            generate_example(m, bpe, encoded_valid)
 
 
 main()
