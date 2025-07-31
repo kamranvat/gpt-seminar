@@ -28,7 +28,7 @@
 - try versions with different optimizers
 
 # Report on the Seminar "Building GPT from Scratch"
-TODO: add bpe, n-gram, or transformer quotes (find a good one)
+TODO: add bpe, n-gram, or transformer quotes (find a good one for each - put the quotes at the beginning of the respective sections), maybe put the best one here next to the william shakespeare quote
 ```markdown
 > "All the world's a stage, and all the men and women merely players; they have their exits and their entrances, and one man in his time plays many parts."
  — William Shakespeare
