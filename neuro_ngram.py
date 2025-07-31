@@ -206,6 +206,13 @@ def main():
     steps = 3
     model_save_dir = Paths.model_dir
     vocab_dir = Paths.vocab_dir
+    # set device to whats available (cuda, mps, cpu)
+    device = torch.device(
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps" if torch.backends.mps.is_available() else "cpu"
+    )
+    logger.info(f"Using device: {device}")
     ############### parameters end #######################
 
     # load corpus
@@ -216,7 +223,7 @@ def main():
 
     # test different ks
     # ks = [250, 500, 750, 1000, 1250, 1500]
-    ks = [250]
+    ks = [500]
 
     # optimizer hyperparameters
     optimizer_hyperparameters = [
