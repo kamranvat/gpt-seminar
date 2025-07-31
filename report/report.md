@@ -27,6 +27,17 @@
 - tune hyperparams using grid search for each separately in this order: k, lr, interpolation weights
 - try versions with different optimizers
 
+# Report on the Seminar "Building GPT from Scratch"
+TODO: add bpe, n-gram, or transformer quotes (find a good one)
+```markdown
+> "All the world's a stage, and all the men and women merely players; they have their exits and their entrances, and one man in his time plays many parts."
+ — William Shakespeare
+```
+```markdown
+> "gce are ld to whom theverby ld enat ed es fsiitat verra, and but not etdlacag ofigh; haqu it his"
+ — Shakespeare neural n-gram
+``` 
+
 ## Introduction
 This report documents the work of our group throughout the seminar "Building GPT from Scratch", held by Prof. Elia Bruni at University of Osnabrück, Summer Semester of 2025. During the seminar, we fulfilled a set of milestone tasks, according to which the report is ordered. Each subsequent task builds on the previous ones, culminating in the implementation of a simple GPT-like transformer model (TODO: link the blog post and cite the paper here).
 Our code is available alongside this report at (TODO: github link here).
@@ -84,7 +95,7 @@ Detail the chosen accuracy metric and its justification.
 Figure showing the coverage of the vocabulary with respect to the token length for different corpora: 
 ![Coverage of Vocabulary](coverage_n10000_k250.png)
 
-## Task 2: N-gram Engine with BPE
+## Milestone 2: N-gram Engine 
 ### 2.1 Data Usage and Splitting
 Summarize the use of cleaned data and the provided splits.
 
@@ -108,7 +119,7 @@ Explain the program for generating sentences from the n-gram system.
 #### 2.4.2 Prediction Strategies
 Discuss context-based prediction, handling missing words, and stopping criteria.
 
-## Task 3: Advanced Training Strategies
+## Milestone 3: Neural N-Gram
 ### 3.1 Early Stopping
 Describe the implementation of early stopping and optional patience optimization.
 
@@ -121,14 +132,9 @@ Detail the grid search process for k, learning rate, and interpolation weights.
 ### 3.4 Optimizer Variants
 Discuss experiments with different optimizers.
 
-## Results
-Summarize the key findings and results from each task.
+## Milestone 4: GPT
+### TODO: add the parts from the new parts
 
-## Discussion
-Interpret the results, discuss challenges, and suggest possible improvements.
-
-## Conclusion
-Provide a brief conclusion and potential future work.
 
 ## References
 
