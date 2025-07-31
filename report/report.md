@@ -28,14 +28,32 @@
 - try versions with different optimizers
 
 ## Introduction
-Briefly introduce the project, its goals, and the overall structure of the report.
+This report documents the work of our group throughout the seminar "Building GPT from Scratch", held by Prof. Elia Bruni at University of Osnabrück, Summer Semester of 2025. During the seminar, we fulfilled a set of milestone tasks, according to which the report is ordered. Each subsequent task builds on the previous ones, culminating in the implementation of a simple GPT-like transformer model (TODO: link the blog post and cite the paper here).
+Our code is available alongside this report at (TODO: github link here).
 
-## Task 0: Text Preprocessing
-Put the unix commands and their python equivalents described on the lecture slides here.
+## Task 0: Text 
+To get an overview of the data, a few unix commands were run on the initially provided corpus (shakespeare.txt TODO cite).
+The commands were translated to python and are provided below.
 
+### 0.1 Space-based Tokenization
+```bash
+tr -sc ’A-Za-z’ ’\n’ < shakes.txt | sort | uniq –c
+````
+python equivalent:
+```python
+import re
+from collections import Counter
+def tokenize_text(text):
+    tokens = re.findall(r'\b\w+\b', text.lower())
+    return Counter(tokens)
+```
 ## Task 1: Data Preparation and Segmentation with BPE
 ### 1.1 Data Splitting
-Describe the process of splitting the Shakespeare dataset into training and test sets.
+We cleaned and divided the initially provided shakespeare corpus by collapsing all groups of whitespaces into one space each, then performing space-based splitting (TODO: add pseudocode or our fct here). Our test set generation (mostly for BPE) was a simple implementation of extracting a percentage of text (TODO add code). However, the corpus contained licence information and such not only in the beginning, but repeatedly throughout the entire text, so improvements to our data cleaning became necessary.
+
+Before we could refine our functionality, a cleaned version of the corpus, split into train, test, validation, as well as a concatenated version of the three, was kindly provided by Mohammad (TODO figure out last name from studip), making our version obsolete.
+
+The rough amount of removed characters becomes apparent when printing character amount and word amount (split at whitespaces):
 
 ```python
 >>> print(len(shakespeare))
@@ -52,7 +70,13 @@ Describe the process of splitting the Shakespeare dataset into training and test
 Explain the training of the segmenter, including different values of k and normalization strategies.
 
 ### 1.3 Performance Comparison
-Discuss how performance was compared across different settings and datasets.
+We evaluated the performance by applying the segmenter to different test sets:
+
+- ```Shakespeare_clean_full.txt```, 10% extracted after training the segmenter on it 
+- ```Shakespeare_clean_test.txt``` - A subset of the original corpus, extracted before training the segmenter
+- ```sms_clean.txt``` - a version of the sms dataset (TODO cite / name correctly) with the spam/ham labels removed.
+
+We expected the segmenter - if it works correctly - to perform best on the corpus extracted after training (since it is a subset of the training data), a bit worse on the Shakespeare test set (since it is in a similar style, but not exactly the training data), and worst on the sms dataset (since the style is very unlike Shakespeare). (TODO change "style" to something more technically relevant to order of tokens)
 
 ### 1.4 Accuracy Measurement
 Detail the chosen accuracy metric and its justification.
