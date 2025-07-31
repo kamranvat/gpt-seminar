@@ -99,7 +99,7 @@ for (count, string) in t:
 ### 1.1 Data Splitting
 We cleaned and divided the initially provided shakespeare corpus by collapsing all groups of whitespaces into one space each, then performing space-based splitting (TODO: add pseudocode or our fct here). Our test set generation (mostly for BPE) was a simple implementation of extracting a percentage of text (TODO add code). However, the corpus contained licence information and such not only in the beginning, but repeatedly throughout the entire text, so improvements to our data cleaning became necessary.
 
-Before we could refine our functionality, a cleaned version of the corpus, split into train, test, validation, as well as a concatenated version of the three, was kindly provided by Mohammad (TODO figure out last name from studip), making our version obsolete.
+Before we could refine our functionality, a cleaned version of the corpus, split into train, test, validation, as well as a concatenated version of the three, was kindly provided to all by course participant Mohamed Ebrahim, making our version obsolete.
 
 The rough amount of removed characters becomes apparent when printing character amount and word amount (split at whitespaces):
 
@@ -108,7 +108,7 @@ The rough amount of removed characters becomes apparent when printing character 
 4941133
 >>> print(len(Shakespeare_clean_full))
 1041007
->>> print(len(shakespeare.split()()))
+>>> print(len(shakespeare.split()))
 901325
 >>> print(len(Shakespeare_clean_full.split()))
 190999
@@ -125,12 +125,14 @@ We evaluated the performance by applying the segmenter to different test sets:
 - ```sms_clean.txt``` - a version of the sms dataset (TODO cite / name correctly) with the spam/ham labels removed.
 
 We expected the segmenter - if it works correctly - to perform best on the corpus extracted after training (since it is a subset of the training data), a bit worse on the Shakespeare test set (since it is in a similar style, but not exactly the training data), and worst on the sms dataset (since the style is very unlike Shakespeare). (TODO change "style" to something more technically relevant to order of tokens)
+TODO add figures and stuff, maybe merge with next section.
 
 ### 1.4 Accuracy Measurement
 Detail the chosen accuracy metric and its justification.
 
 Figure showing the coverage of the vocabulary with respect to the token length for different corpora: 
 ![Coverage of Vocabulary](coverage_n10000_k250.png)
+NOTE this is a placeholder figure
 
 ## Milestone 2: N-gram Engine 
 ### 2.1 Data Usage and Splitting
