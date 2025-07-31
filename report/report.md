@@ -48,15 +48,52 @@ The commands were translated to python and are provided below.
 
 ### 0.1 Space-based Tokenization
 ```bash
-tr -sc ’A-Za-z’ ’\n’ < shakes.txt | sort | uniq –c
+tr -sc 'A-Za-z' '\n' < shakespeare.txt | sort | uniq -c |sort -n -r 
 ````
+```
+  23288 the
+  22225 I
+  18653 and
+  16373 to
+  15725 of
+  12797 a
+  12186 you
+  10839 my
+  10016 in
+   8954 d
+```
+
 python equivalent:
 ```python
 import re
-from collections import Counter
-def tokenize_text(text):
-    tokens = re.findall(r'\b\w+\b', text.lower())
-    return Counter(tokens)
+def tokenize():
+    with open('shakespeare.txt') as f:
+        s=f.read()
+        pattern = r'[^A-Za-z]+'
+        n = re.sub(pattern=pattern, repl='\n', string=s)
+        n = n.split('\n') 
+        values, counts = np.unique(n, return_counts=True)
+        sorted_indices = np.argsort(counts)
+        values = values[sorted_indices]
+        counts = counts[sorted_indices]
+        return list(zip(reversed(counts), reversed(values)))
+
+t = tokenize()
+for (count, string) in t:
+    print(f"{count} {string}")
+```
+```
+23288 the
+22225 I
+18653 and
+16373 to
+15725 of
+12797 a
+12186 you
+10839 my
+10016 in
+8954 d
+
 ```
 ## Task 1: Data Preparation and Segmentation with BPE
 ### 1.1 Data Splitting
