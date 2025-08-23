@@ -11,8 +11,9 @@ from bpe_class import BPE
 from torcheval.metrics.text import Perplexity
 
 # Configure logging
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger()
 
 
@@ -22,9 +23,7 @@ class NeuroNgram(nn.Module):
         self.n = n
         self.vocab = vocab
         self.vocab_size = len(vocab)
-        self.embedding = nn.Embedding(
-            self.vocab_size ** (self.n-1), self.vocab_size
-        )
+        self.embedding = nn.Embedding(self.vocab_size ** (self.n - 1), self.vocab_size)
 
     def forward(self, context, target=None):
         # expected one hot encoded target
@@ -83,17 +82,30 @@ class NeuroNgram(nn.Module):
 
         # sum up
         return torch.sum(c, dim=-1)
-    
+
     def decode(self, c):
-        return c%self.vocab_size
+        return c % self.vocab_size
 
 
-def train(model, data, writer, optimizer=None, batch_size=16, context_size=8, steps=10, validation_data=None, validate_every_x=1, patience=5, model_save_dir = "models", save_top_k=None):
+def train(
+    model,
+    data,
+    writer,
+    optimizer=None,
+    batch_size=16,
+    context_size=8,
+    steps=10,
+    validation_data=None,
+    validate_every_x=1,
+    patience=5,
+    model_save_dir=Paths.model_dir,
+    save_top_k=None,
+):
 
     steps_without_validation_improvement = 0
     best_valid_loss = torch.inf
 
-    os.makedirs(model_save_dir, exist_ok=True)
+    model_save_dir.mkdir(parents=True, exist_ok=True)
 
     if optimizer is None:
         optimizer = torch.optim.Adam(model.parameters())
@@ -101,7 +113,9 @@ def train(model, data, writer, optimizer=None, batch_size=16, context_size=8, st
     for step in range(steps):
         logger.debug(f"step {step}")
         # get batch
-        x, y = model.get_batch(data=data, batch_size=batch_size, context_size=context_size)
+        x, y = model.get_batch(
+            data=data, batch_size=batch_size, context_size=context_size
+        )
 
         # perform one forward step
         logits, loss = model(x, y)
@@ -114,9 +128,11 @@ def train(model, data, writer, optimizer=None, batch_size=16, context_size=8, st
         optimizer.step()
 
         # run validation
-        if validation_data is not None and step%validate_every_x==0:
+        if validation_data is not None and step % validate_every_x == 0:
             # get batch
-            x, y = model.get_batch(data=validation_data, batch_size=batch_size, context_size=context_size)
+            x, y = model.get_batch(
+                data=validation_data, batch_size=batch_size, context_size=context_size
+            )
 
             # perform one step
             _, loss = model(x, y)
@@ -124,41 +140,50 @@ def train(model, data, writer, optimizer=None, batch_size=16, context_size=8, st
 
             # check whether loss improved
             if loss < best_valid_loss:
-                best_valid_loss = loss    
+                best_valid_loss = loss
                 steps_without_validation_improvement = 0
-                torch.save(model.state_dict(), os.path.join(model_save_dir, f"step_{step}_loss_{loss}"))
+                torch.save(
+                    model.state_dict(),
+                    model_save_dir / f"step_{step}_loss_{loss}",
+                )
 
                 # optionally delete oldest model
                 if save_top_k is not None:
                     # match models
-                    files = glob(os.path.join(model_save_dir, f"step_*"))
+                    files = glob(str(model_save_dir / f"step_*"))
+
                     if len(files) > save_top_k:
-                        extract_steps = lambda x: int(x.split('_')[2])
+                        extract_steps = lambda x: int(x.split("_")[2])
                         file_steps = [extract_steps(f) for f in files]
                         oldest_index = np.argmin(file_steps)
                         # delete oldest model
-                        logger.info(f"Max number of past model weights to keep reached ({save_top_k}), deleting oldes file: {files[oldest_index]}")
+                        logger.info(
+                            f"Max number of past model weights to keep reached ({save_top_k}), deleting oldes file: {files[oldest_index]}"
+                        )
                         os.remove(files[oldest_index])
-
 
             else:
                 steps_without_validation_improvement += 1
-            
+
             if steps_without_validation_improvement >= patience:
                 # early stopping
-                logger.info(f"Early stopping triggered at step {step}, reverting back to step {step-patience}")
+                logger.info(
+                    f"Early stopping triggered at step {step}, reverting back to step {step-patience}"
+                )
                 # match path
-                best_path = glob(os.path.join(model_save_dir, f"step_{step-patience}_*"))[0]
+                best_path = glob(str(model_save_dir / f"step_{step-patience}_*"))[0]
                 model.load_state_dict(torch.load(best_path, weights_only=True))
                 break
 
+
 def evaluate(test_set):
-    metric=Perplexity()
-    x,y = None
+    metric = Perplexity()
+    x, y = None
     metric.update(x, y)
     perplexity = metric.compute()
     logger.info(f"perplexity {perplexity}")
     return perplexity
+
 
 def generate_example(m, bpe, corpus):
     context = torch.unsqueeze(torch.unsqueeze(torch.tensor(corpus[:2]), 0), 0)
@@ -166,7 +191,8 @@ def generate_example(m, bpe, corpus):
     o = m.predict(context)
     # need to decode each sequence in batch separately
     logger.info(f"generated example: {''.join(bpe.decode(m.decode(o)[0].tolist()))}")
-            
+
+
 def main():
     ############### define parameters ####################
     n = 3
@@ -174,8 +200,16 @@ def main():
     batch_size = 4
     patience = 100000 # stop early if validation loss has not improved for this number of times
     validate_every_x = 1  # run validation every x steps
-    steps = 100000
-    model_save_dir = "models"
+    steps = 3
+    model_save_dir = Paths.model_dir
+    vocab_dir = Paths.vocab_dir
+    # set device to whats available (cuda, mps, cpu)
+    device = torch.device(
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps" if torch.backends.mps.is_available() else "cpu"
+    )
+    logger.info(f"Using device: {device}")
     ############### parameters end #######################
 
     # load corpus
@@ -183,18 +217,18 @@ def main():
     train_corpus = file_utils.load_corpus(Paths.shakespeare_clean_train)
     test_corpus = file_utils.load_corpus(Paths.shakespeare_clean_test)
     valid_corpus = file_utils.load_corpus(Paths.shakespeare_clean_valid)
-  
+
     # test different ks
-    ks = [250, 500, 750, 1000, 1250, 1500]
-    
+    # ks = [250, 500, 750, 1000, 1250, 1500]
+    ks = [500]
+
     # optimizer hyperparameters
     optimizer_hyperparameters = [
         {},
         # {'momentum': []},
-        {'learning_rate': [1e-6, 1e-5, 1e-4, 1e-3, 1e-2]},
-        {'learning_rate': [1e-6, 1e-5, 1e-4, 1e-3, 1e-2]},
+        {"learning_rate": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2]},
+        {"learning_rate": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2]},
     ]
-
 
     for k in ks:
         logger.info(f"Starting run for k {k}")
@@ -203,7 +237,7 @@ def main():
             writer = SummaryWriter(comment=f"k_{k}_i_{i}")
             bpe = BPE(k=k)
 
-            vocab_path = os.path.join("data", f"vocab_full_k{k}.txt")
+            vocab_path = vocab_dir / f"vocab_full_k{k}.txt"
             bpe.load_vocab(vocab_path)
             vocab = bpe.vocab
             logger.info("loaded vocab")
@@ -218,20 +252,21 @@ def main():
 
             m = NeuroNgram(vocab=torch.tensor(encoded_vocab), n=n)
             logger.info("created model")
-            optimizers = [torch.optim.SGD(m.parameters()),
-                  torch.optim.SGD(m.parameters(), momentum=0.9),
-                  torch.optim.Adam(m.parameters(), lr=1e-6),
-                  torch.optim.Adam(m.parameters(), lr=1e-5), 
-                  torch.optim.Adam(m.parameters(), lr=1e-4),
-                  torch.optim.Adam(m.parameters(), lr=1e-3),
-                  torch.optim.Adam(m.parameters(), lr=1e-2),
-                  torch.optim.AdamW(m.parameters(), lr=1e-6),
-                  torch.optim.AdamW(m.parameters(), lr=1e-5), 
-                  torch.optim.AdamW(m.parameters(), lr=1e-4),
-                  torch.optim.AdamW(m.parameters(), lr=1e-3),
-                  torch.optim.AdamW(m.parameters(), lr=1e-2),
-                  ] # could also add , torch.optim.RMSprop
-            
+            optimizers = [
+                torch.optim.SGD(m.parameters()),
+                torch.optim.SGD(m.parameters(), momentum=0.9),
+                torch.optim.Adam(m.parameters(), lr=1e-6),
+                torch.optim.Adam(m.parameters(), lr=1e-5),
+                torch.optim.Adam(m.parameters(), lr=1e-4),
+                torch.optim.Adam(m.parameters(), lr=1e-3),
+                torch.optim.Adam(m.parameters(), lr=1e-2),
+                torch.optim.AdamW(m.parameters(), lr=1e-6),
+                torch.optim.AdamW(m.parameters(), lr=1e-5),
+                torch.optim.AdamW(m.parameters(), lr=1e-4),
+                torch.optim.AdamW(m.parameters(), lr=1e-3),
+                torch.optim.AdamW(m.parameters(), lr=1e-2),
+            ]  # could also add , torch.optim.RMSprop
+
             logger.info("created optimizers")
             optimizer = optimizers[i]
 
@@ -239,20 +274,20 @@ def main():
 
             # train model
             train(
-                m, 
-                data=encoded_train, 
-                writer=writer, 
+                m,
+                data=encoded_train,
+                writer=writer,
                 optimizer=optimizer,
-                batch_size=batch_size, 
-                context_size=context_size, 
+                batch_size=batch_size,
+                context_size=context_size,
                 steps=steps,
                 validation_data=encoded_valid,
                 validate_every_x=validate_every_x,
                 patience=patience,
-                model_save_dir=os.path.join(f"{model_save_dir}", f"{k}_{i}"),
-                save_top_k=1
-                )
-            
+                model_save_dir=model_save_dir / f"{k}_{i}",
+                save_top_k=1,
+            )
+
             generate_example(m, bpe, encoded_valid)
 
 

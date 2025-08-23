@@ -92,3 +92,4 @@ class Paths:
     vocab_full_k1000 = vocab_dir / "vocab_full_k1000.txt"
     vocab_full_k1250 = vocab_dir / "vocab_full_k1250.txt"
     vocab_full_k1500 = vocab_dir / "vocab_full_k1500.txt"
+    model_dir = Path("./models/")
