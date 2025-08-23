@@ -3,12 +3,11 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import numpy as np
-from utils import Paths
+from utils import Paths, FileUtils
 from glob import glob
 from torch.utils.tensorboard import SummaryWriter
 import logging
 from bpe_class import BPE
-from utils import FileUtils
 from torcheval.metrics.text import Perplexity
 
 # Configure logging
@@ -62,7 +61,7 @@ class NeuroNgram(nn.Module):
         context_start_indices = [
             data[j : j + context_size + self.n - 2] for j in start_indices
         ]
-        c = torch.tensor(context_start_indices).unfold(1, 2, 1)
+        c = torch.unfold_copy(torch.tensor(context_start_indices), 1, self.n, 1) 
         # need to multiply first value with vocab size and then sum along last axis
         for n in range(0, self.n - 2):
             c[:, :, n] *= self.vocab_size
@@ -75,7 +74,6 @@ class NeuroNgram(nn.Module):
                 for i in start_indices
             ]
         )
-        context = [data[j : j + context_size + self.n] for j in start_indices]
         return x, y
 
     def encode(self, c):
@@ -127,13 +125,13 @@ def train(model, data, writer, optimizer=None, batch_size=16, context_size=8, st
             # check whether loss improved
             if loss < best_valid_loss:
                 best_valid_loss = loss    
+                steps_without_validation_improvement = 0
                 torch.save(model.state_dict(), os.path.join(model_save_dir, f"step_{step}_loss_{loss}"))
 
                 # optionally delete oldest model
                 if save_top_k is not None:
                     # match models
                     files = glob(os.path.join(model_save_dir, f"step_*"))
-                    print(files)
                     if len(files) > save_top_k:
                         extract_steps = lambda x: int(x.split('_')[2])
                         file_steps = [extract_steps(f) for f in files]
@@ -150,7 +148,7 @@ def train(model, data, writer, optimizer=None, batch_size=16, context_size=8, st
                 # early stopping
                 logger.info(f"Early stopping triggered at step {step}, reverting back to step {step-patience}")
                 # match path
-                best_path = glob(os.path.join(model_save_dir, f"step_{step-patience}_"))[0]
+                best_path = glob(os.path.join(model_save_dir, f"step_{step-patience}_*"))[0]
                 model.load_state_dict(torch.load(best_path, weights_only=True))
                 break
 
@@ -174,9 +172,9 @@ def main():
     n = 3
     context_size = 6
     batch_size = 4
-    patience = 5 # stop early if validation loss has not improved for this number of times
+    patience = 100000 # stop early if validation loss has not improved for this number of times
     validate_every_x = 1  # run validation every x steps
-    steps = 3
+    steps = 100000
     model_save_dir = "models"
     ############### parameters end #######################
 
@@ -257,5 +255,53 @@ def main():
             
             generate_example(m, bpe, encoded_valid)
 
+
+def test(): 
+    ############### define parameters ####################
+    n = 3
+    context_size = 6
+    batch_size = 4
+    patience = 5 # stop early if validation loss has not improved for this number of times
+    validate_every_x = 1  # run validation every x steps
+    steps = 3
+    model_save_dir = "models"
+    ############### parameters end #######################
+    k=250
+
+    # load corpus
+    file_utils = FileUtils()
+    train_corpus = file_utils.load_corpus(Paths.shakespeare_clean_train)
+    test_corpus = file_utils.load_corpus(Paths.shakespeare_clean_test)
+    valid_corpus = file_utils.load_corpus(Paths.shakespeare_clean_valid)
+    
+    bpe = BPE(k=k)
+
+    vocab_path = os.path.join("data", f"vocab_full_k{k}.txt")
+    bpe.load_vocab(vocab_path)
+    vocab = bpe.vocab
+    logger.info("loaded vocab")
+    encoded_vocab = bpe.encode(vocab)
+    logger.info("encoded vocab")
+    encoded_train = bpe.encode(train_corpus)
+    logger.info("encoded train")
+    encoded_test = bpe.encode(test_corpus)
+    logger.info("encoded test")
+    encoded_valid = bpe.encode(valid_corpus)
+    logger.info("encoded valid")
+
+    m = NeuroNgram(vocab=np.array(encoded_vocab), n=n)
+
+    x, y = m.get_batch(data=encoded_train, batch_size=batch_size, context_size=context_size)
+    print(x)
+    print(y)
+
+    print(x.shape, y.shape)
+
+
+    generate_example(m, bpe, encoded_valid)
+
+    logits, loss = m.forward(x, y)
+    print("logits \n", logits.shape, logits)
+    print("loss", loss)
 
 main()
