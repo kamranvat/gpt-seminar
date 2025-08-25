@@ -148,7 +148,7 @@ class BPE:
         self.vocab = vocab
         return corpus_list, vocab
 
-    def test(self, vocab, test_set, min_token_length=3, tqdm_position=None):
+    def test(self, vocab, test_set, min_token_length=1, tqdm_position=None):
         """Take a vocab and a test set (as str), run bpe, return information about the performance"""
         test_set = list(test_set)  # list of str
         valid_indices = list(range(0, len(test_set)))
@@ -256,11 +256,8 @@ class BPE:
         else:
             plt.show()
 
-    def evaluate_token_length(self, vocab, train_set, id_test_set, ood_test_set, save=False, save_dir="results", save_name="token_length_distribution.png"):
+    def evaluate_token_length(self, vocab, train_set, id_test_set, ood_test_set, save=False, save_dir="results", save_name="token_length_distribution.png", n_chars=None, k=-1):
         """Compare metrics of the segmentation between the train and test set"""
-        # train_set_segmented, _, _ = self.test(vocab, train_set)
-        # id_test_set_segmented, _, _ = self.test(vocab, id_test_set)
-        # ood_test_set_segmented, _, _ = self.test(vocab, ood_test_set)
 
         # arguments for worker processes
         args_list = [(vocab, train_set, 1, 0),
@@ -275,8 +272,16 @@ class BPE:
                 train_set_segmented = t
             elif p == 1:
                 id_test_set_segmented = t
+                # store tokenized corpus for later use
+                corpus_name = f"Shakespeare_clean_test_n{n_chars}_k{k}.txt"
+                os.makedirs(Paths.tokenized_dir, exist_ok=True)
+                FileUtils.store_vocab(list(t), Paths.tokenized_dir, corpus_name)
             elif p == 2:
                 ood_test_set_segmented = t
+                # store tokenized corpus for later use
+                corpus_name = f"sms_clean_test_n{n_chars}_k{k}.txt"
+                os.makedirs(Paths.tokenized_dir, exist_ok=True)
+                FileUtils.store_vocab(list(t), Paths.tokenized_dir, corpus_name)
 
         train_lengths = [len(token) for token in train_set_segmented]
         id_test_lengths = [len(token) for token in id_test_set_segmented]
@@ -318,7 +323,7 @@ def main():
     vocab_path = Paths.vocab_full_k250
     vocab_dir_path = Paths.vocab_dir
 
-    results_dir = "results_final"
+    results_dir = "results_bpe"
     os.makedirs(results_dir, exist_ok=True)
 
     ks = [100, 250, 500, 750, 1000, 1500, 2000, 5000, 7500, 10000]
@@ -339,9 +344,15 @@ def main():
 
         # store vocab
         vocab_name = f"vocab_n{n_chars}_k{k}.txt"
-        FileUtils.store_vocab(vocab, vocab_dir_path, vocab_name)
+        FileUtils.store_vocab(list(vocab), vocab_dir_path, vocab_name)
+
+        # store tokenized corpus for later use
+        corpus_name = f"Shakespeare_clean_train_n{n_chars}_k{k}.txt"
+        os.makedirs(Paths.tokenized_dir, exist_ok=True)
+        FileUtils.store_vocab(list(tokenized_corpus_list), Paths.tokenized_dir, corpus_name)
+
         bpe.evaluate_token_length(vocab, corpus, id_test_set, ood_test_set, save=True,
-                                  save_dir=results_dir, save_name=f"token_length_distribution_k_{k}.png")
+                                  save_dir=results_dir, save_name=f"token_length_distribution_k_{k}.png", n_chars=n_chars, k=k)
 
     # plots
     bpe.plot_coverages(vocabs, ks, corpus, id_test_set,
