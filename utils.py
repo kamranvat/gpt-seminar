@@ -83,6 +83,7 @@ class Paths:
     sms_clean = corpus_dir / "sms_clean.txt"
     sms = corpus_dir / "sms.txt"
     vocab_dir = Path("./data/")
+    tokenized_dir = Path("./tokenized_corpora/")
     sms_vocab_full_k250 = vocab_dir / "sms_vocab_full_k250.txt"
     sms_vocab_full_k500 = vocab_dir / "sms_vocab_full_k500.txt"
     sms_vocab_full_k750 = vocab_dir / "sms_vocab_full_k750.txt"
