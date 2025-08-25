@@ -1,14 +1,17 @@
-import os
-import torch
-from torch import nn
-import torch.nn.functional as F
-import numpy as np
-from utils import Paths, FileUtils
-from glob import glob
-from torch.utils.tensorboard import SummaryWriter
 import logging
+import os
+from glob import glob
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn.functional as F
 from bpe_class import BPE
-from torcheval.metrics.text import Perplexity
+from torch import nn
+from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
+from utils import FileUtils, Paths
 
 # Configure logging
 logging.basicConfig(
@@ -23,7 +26,8 @@ class NeuroNgram(nn.Module):
         self.n = n
         self.vocab = vocab
         self.vocab_size = len(vocab)
-        self.embedding = nn.Embedding(self.vocab_size ** (self.n - 1), self.vocab_size)
+        self.embedding = nn.Embedding(
+            self.vocab_size ** (self.n - 1), self.vocab_size)
 
     def forward(self, context, target=None):
         # expected one hot encoded target
@@ -33,34 +37,54 @@ class NeuroNgram(nn.Module):
         batch_size, context_size, vocab_size = logits.shape
         logits_view = logits.view(batch_size * context_size, vocab_size)
         loss = None
+        pp = None
         if target is not None:
             targets_view = target.view(batch_size * context_size)
+            probs = torch.log(F.softmax(logits_view))
+            target_probs = probs[torch.arange(len(probs)), targets_view]
+            pp = torch.pow(2, -torch.sum(target_probs)/(len(targets_view)))
+
             loss = F.cross_entropy(logits_view, targets_view)
 
-        return logits, loss
+        return logits, loss, pp
 
     def predict(self, context, max_new_tokens=50):
-        for _ in range(max_new_tokens):
+        prediction = context.detach().clone()
+        prediction = prediction.squeeze(0)
+
+        # expects context to not be encoded
+        for i in range(max_new_tokens):
             # predict (fwd pass)
-            logits, loss = self(context)
+            if self.n == 1:
+                encoded_context = torch.tensor([[0]])
+            else:
+                # add batch dimension back for forward pass
+                context = prediction[0, -(self.n-1)
+                                          :].clone().unsqueeze(0).unsqueeze(0)
+                encoded_context = self.encode(context)
+            logits, loss, _ = self(encoded_context)
             # look at last timestep
             logits = logits[:, -1, :]  # logits is now [batchsize, vocab_len]
             # softmax for probs
             probs = F.softmax(logits, dim=-1)
             # sample
-            next_context = torch.multinomial(probs, num_samples=1)  # [batchsize, 1]
+            next_context = torch.multinomial(
+                probs, num_samples=1)  # [batchsize, 1]
             # append sampled to sequence
-            context = torch.cat((context, next_context), dim=1)  # [batchsize, t+1]
-        return context
+
+            prediction = torch.cat(
+                (prediction, next_context), dim=1)  # [batchsize, t+1]
+        return prediction[0, self.n-1:]
 
     def get_batch(self, data, batch_size, context_size):
         start_indices = torch.randint(
             low=0, high=(len(data) - (context_size + self.n)), size=(batch_size,)
         )
         context_start_indices = [
-            data[j : j + context_size + self.n - 2] for j in start_indices
+            data[j: j + context_size + self.n - 2] for j in start_indices
         ]
-        c = torch.unfold_copy(torch.tensor(context_start_indices), 1, self.n, 1) 
+        c = torch.unfold_copy(torch.tensor(
+            context_start_indices), 1, self.n-1, 1)
         # need to multiply first value with vocab size and then sum along last axis
         for n in range(0, self.n - 2):
             c[:, :, n] *= self.vocab_size
@@ -69,7 +93,8 @@ class NeuroNgram(nn.Module):
         x = torch.sum(c, dim=-1)
         y = torch.stack(
             [
-                torch.tensor(data[i + self.n - 1 : i + self.n + context_size - 1])
+                torch.tensor(data[i + self.n - 1: i +
+                             self.n + context_size - 1])
                 for i in start_indices
             ]
         )
@@ -81,10 +106,35 @@ class NeuroNgram(nn.Module):
             c[:, :, n] *= self.vocab_size
 
         # sum up
-        return torch.sum(c, dim=-1)
+        return torch.sum(c, dim=-1, dtype=int)
 
     def decode(self, c):
         return c % self.vocab_size
+
+    def evaluate_perplexity_on_test(self, tokenized_test, batch_size=None, context_size=None):
+        # reshape to get batches
+        # [TODO] adapt to be able to use actual batches
+        # for now stick to batches of size 1 to avoid issues when it cannot be divided by the batch size
+        # need to keep context size to 1 as well in that case
+
+        context = tokenized_test[:-1]
+        target = tokenized_test[self.n-1:]
+
+        c = torch.unfold_copy(torch.tensor(
+            context).unsqueeze(0), 1, self.n-1, 1)
+        # need to multiply first value with vocab size and then sum along last axis
+        for n in range(0, self.n - 2):
+            c[:, :, n] *= self.vocab_size
+
+        # sum up
+        x = torch.sum(c, dim=-1)
+        y = torch.tensor(target).unsqueeze(0)
+        print("x", x)
+        print("y", y)
+        logits, loss, pp = self.forward(context=x, target=y)
+
+        # calculate perplexity from logits
+        return pp
 
 
 def train(
@@ -100,6 +150,9 @@ def train(
     patience=5,
     model_save_dir=Paths.model_dir,
     save_top_k=None,
+    generate_context=None,
+    generate_examples_every_x=100,
+    bpe=None
 ):
 
     steps_without_validation_improvement = 0
@@ -110,7 +163,7 @@ def train(
     if optimizer is None:
         optimizer = torch.optim.Adam(model.parameters())
 
-    for step in range(steps):
+    for step in tqdm(range(steps)):
         logger.debug(f"step {step}")
         # get batch
         x, y = model.get_batch(
@@ -118,8 +171,9 @@ def train(
         )
 
         # perform one forward step
-        logits, loss = model(x, y)
+        logits, loss, pp = model(x, y)
         writer.add_scalar("Loss/train", loss, step)
+        writer.add_scalar("Perplexity/train", pp, step)
 
         # optimize with loss
         # zero previous gradients
@@ -135,8 +189,9 @@ def train(
             )
 
             # perform one step
-            _, loss = model(x, y)
+            _, loss, pp = model(x, y)
             writer.add_scalar("Loss/valid", loss, step)
+            writer.add_scalar("Perplexity/valid", pp, step)
 
             # check whether loss improved
             if loss < best_valid_loss:
@@ -153,7 +208,7 @@ def train(
                     files = glob(str(model_save_dir / f"step_*"))
 
                     if len(files) > save_top_k:
-                        extract_steps = lambda x: int(x.split("_")[2])
+                        def extract_steps(x): return int(x.split("_")[3])
                         file_steps = [extract_steps(f) for f in files]
                         oldest_index = np.argmin(file_steps)
                         # delete oldest model
@@ -171,38 +226,68 @@ def train(
                     f"Early stopping triggered at step {step}, reverting back to step {step-patience}"
                 )
                 # match path
-                best_path = glob(str(model_save_dir / f"step_{step-patience}_*"))[0]
+                best_path = glob(
+                    str(model_save_dir / f"step_{step-patience}_*"))[0]
                 model.load_state_dict(torch.load(best_path, weights_only=True))
                 break
 
-
-def evaluate(test_set):
-    metric = Perplexity()
-    x, y = None
-    metric.update(x, y)
-    perplexity = metric.compute()
-    logger.info(f"perplexity {perplexity}")
-    return perplexity
+        if generate_examples_every_x > 0 and step % generate_examples_every_x == 0:
+            for i in range(5):
+                generate_example(model, bpe, generate_context)
 
 
-def generate_example(m, bpe, corpus):
-    context = torch.unsqueeze(torch.unsqueeze(torch.tensor(corpus[:2]), 0), 0)
-    context = m.encode(context)
+def generate_example(m, bpe, tokenized_context):
+    # encode context with bpe
+    context = bpe.encode(tokenized_context)
+
+    # cut to correct length for n and convert to tesor
+    context = torch.unsqueeze(torch.unsqueeze(
+        torch.tensor(context[:m.n-1]), 0), 0)
     o = m.predict(context)
     # need to decode each sequence in batch separately
-    logger.info(f"generated example: {''.join(bpe.decode(m.decode(o)[0].tolist()))}")
+    logger.info(
+        f"generated example: {''.join(tokenized_context)}{''.join(bpe.decode(o.tolist()))}")
+
+
+def load_tokenized(corpusname, type, vocab, bpe=None, k=100, n_chars=None):
+    if bpe is None:
+        bpe = BPE(k=k)
+
+    bpe.set_vocab(vocab)
+
+    path = Paths.tokenized_dir / f"{corpusname}_{type}_n{n_chars}_k{k}.txt"
+
+    if os.path.exists(path):
+        tokenized_corpus = FileUtils().load_vocab(path)
+    else:
+        logger.info(
+            "tokenized corpus has not been saved before, will be tokenized and stored now")
+        os.makedirs(Paths.tokenized_dir, exist_ok=True)
+        tokenized_corpus, _, _ = bpe.test(vocab, FileUtils().load_corpus(
+            Paths.corpus_dir / f"{corpusname}_{type}.txt", window_size=None))
+        corpus_name = f"{corpusname}_{type}_n{n_chars}_k{k}.txt"
+        FileUtils.store_vocab(list(tokenized_corpus),
+                              Paths.tokenized_dir, corpus_name)
+
+    return tokenized_corpus
 
 
 def main():
     ############### define parameters ####################
-    n = 3
-    context_size = 6
-    batch_size = 4
-    patience = 100000 # stop early if validation loss has not improved for this number of times
+    n = 2
+    context_size = 128
+    batch_size = 64
+    patience = 100  # stop early if validation loss has not improved for this number of times
     validate_every_x = 1  # run validation every x steps
-    steps = 3
+    steps = 10000
+    save_top_k = 1
+    generate_example_every = 500
     model_save_dir = Paths.model_dir
-    vocab_dir = Paths.vocab_dir
+    vocab_dir_path = Paths.vocab_dir
+    results_dir = "results_neural_ngram"
+    csv_path = Path(results_dir) / f"perplexities_n{n}.csv"
+    context = "All the world's a stage,"
+
     # set device to whats available (cuda, mps, cpu)
     device = torch.device(
         "cuda"
@@ -212,42 +297,49 @@ def main():
     logger.info(f"Using device: {device}")
     ############### parameters end #######################
 
-    # load corpus
-    file_utils = FileUtils()
-    train_corpus = file_utils.load_corpus(Paths.shakespeare_clean_train)
-    test_corpus = file_utils.load_corpus(Paths.shakespeare_clean_test)
-    valid_corpus = file_utils.load_corpus(Paths.shakespeare_clean_valid)
+    context = FileUtils().preprocess_corpus(context)
 
     # test different ks
-    # ks = [250, 500, 750, 1000, 1250, 1500]
-    ks = [500]
+    ks = [100, 250, 500, 750, 1000, 1500, 2000, 5000, 7500, 10000]
 
-    # optimizer hyperparameters
-    optimizer_hyperparameters = [
-        {},
-        # {'momentum': []},
-        {"learning_rate": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2]},
-        {"learning_rate": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2]},
-    ]
+    # lists for storing results
+    list_i = []
+    list_n = []
+    list_k = []
+    list_pp = []
+    list_type = []
 
     for k in ks:
         logger.info(f"Starting run for k {k}")
         for i in range(12):
             logger.info(f"Starting run for optimizer {i}")
-            writer = SummaryWriter(comment=f"k_{k}_i_{i}")
-            bpe = BPE(k=k)
+            writer = SummaryWriter(comment=f"n{n}_k_{k}_i_{i}")
 
-            vocab_path = vocab_dir / f"vocab_full_k{k}.txt"
-            bpe.load_vocab(vocab_path)
-            vocab = bpe.vocab
+            vocab_path = vocab_dir_path / f"vocab_nNone_k{k}.txt"
+            vocab = FileUtils().load_vocab(vocab_path)
+
+            bpe = BPE(k=k)
+            bpe.set_vocab(vocab)
+
+            tokenized_train = load_tokenized(
+                'Shakespeare_clean', 'train', vocab=vocab, bpe=bpe, k=k, n_chars=None)
+            tokenized_test = load_tokenized(
+                'Shakespeare_clean', 'test', vocab=vocab, bpe=bpe, k=k, n_chars=None)
+            tokenized_valid = load_tokenized(
+                'Shakespeare_clean', 'valid', vocab=vocab, bpe=bpe, k=k, n_chars=None)
+
+            tokenized_context = bpe.tokenize(context)
+            logger.info(f"tokenized context {tokenized_context}")
+
             logger.info("loaded vocab")
             encoded_vocab = bpe.encode(vocab)
+            encoded_context = bpe.encode(tokenized_context)
             logger.info("encoded vocab")
-            encoded_train = bpe.encode(train_corpus)
+            encoded_train = bpe.encode(tokenized_train)
             logger.info("encoded train")
-            encoded_test = bpe.encode(test_corpus)
+            encoded_test = bpe.encode(tokenized_test)
             logger.info("encoded test")
-            encoded_valid = bpe.encode(valid_corpus)
+            encoded_valid = bpe.encode(tokenized_valid)
             logger.info("encoded valid")
 
             m = NeuroNgram(vocab=torch.tensor(encoded_vocab), n=n)
@@ -255,22 +347,26 @@ def main():
             optimizers = [
                 torch.optim.SGD(m.parameters()),
                 torch.optim.SGD(m.parameters(), momentum=0.9),
-                torch.optim.Adam(m.parameters(), lr=1e-6),
-                torch.optim.Adam(m.parameters(), lr=1e-5),
                 torch.optim.Adam(m.parameters(), lr=1e-4),
-                torch.optim.Adam(m.parameters(), lr=1e-3),
                 torch.optim.Adam(m.parameters(), lr=1e-2),
-                torch.optim.AdamW(m.parameters(), lr=1e-6),
-                torch.optim.AdamW(m.parameters(), lr=1e-5),
+                torch.optim.Adam(m.parameters(), lr=1e-1),
+                torch.optim.Adam(m.parameters(), lr=25e-2),
+                torch.optim.Adam(m.parameters(), lr=5e-1),
                 torch.optim.AdamW(m.parameters(), lr=1e-4),
-                torch.optim.AdamW(m.parameters(), lr=1e-3),
                 torch.optim.AdamW(m.parameters(), lr=1e-2),
+                torch.optim.AdamW(m.parameters(), lr=1e-1),
+                torch.optim.AdamW(m.parameters(), lr=25e-2),
+                torch.optim.AdamW(m.parameters(), lr=5e-1),
+
             ]  # could also add , torch.optim.RMSprop
 
             logger.info("created optimizers")
             optimizer = optimizers[i]
 
-            generate_example(m, bpe, encoded_valid)
+            for _ in range(5):
+                generate_example(m, bpe, tokenized_context)
+            pp = m.evaluate_perplexity_on_test(encoded_test)
+            logger.info(f"untrained perplexity: {pp.item()}")
 
             # train model
             train(
@@ -284,59 +380,111 @@ def main():
                 validation_data=encoded_valid,
                 validate_every_x=validate_every_x,
                 patience=patience,
-                model_save_dir=model_save_dir / f"{k}_{i}",
-                save_top_k=1,
+                model_save_dir=model_save_dir / f"n{n}_k{k}_i{i}",
+                save_top_k=save_top_k,
+                generate_context=tokenized_context,
+                generate_examples_every_x=generate_example_every,
+                bpe=bpe
             )
 
-            generate_example(m, bpe, encoded_valid)
+            # compute perplexity on train
+            pp = m.evaluate_perplexity_on_test(encoded_train)
+            logger.info(f"train perplexity, k={k}, n={n}, i={i}: {pp.item()}")
+            list_i.append(i)
+            list_n.append(n)
+            list_k.append(k)
+            list_type.append("train")
+            list_pp.append(pp.item())
+            # compute perplexity on test
+            pp = m.evaluate_perplexity_on_test(encoded_test)
+            logger.info(f"test perplexity, k={k}, n={n}, i={i}: {pp.item()}")
+            list_i.append(i)
+            list_n.append(n)
+            list_k.append(k)
+            list_type.append("test")
+            list_pp.append(pp.item())
+            # compute perplexity on valid
+            pp = m.evaluate_perplexity_on_test(encoded_valid)
+            logger.info(f"valid perplexity, k={k}, n={n}, i={i}: {pp.item()}")
+            list_i.append(i)
+            list_n.append(n)
+            list_k.append(k)
+            list_type.append("valid")
+            list_pp.append(pp.item())
+
+            df = pd.DataFrame(
+                {"k": list_k, "n": list_n, "i": list_i, "perplexity": list_pp, "type": list_type})
+            df.to_csv(csv_path)
+
+            logger.info("finished training")
+            for _ in range(5):
+                generate_example(m, bpe, tokenized_context)
 
 
-def test(): 
+def test():
     ############### define parameters ####################
-    n = 3
+    n = 1
     context_size = 6
     batch_size = 4
-    patience = 5 # stop early if validation loss has not improved for this number of times
+    patience = 5  # stop early if validation loss has not improved for this number of times
     validate_every_x = 1  # run validation every x steps
     steps = 3
     model_save_dir = "models"
+
+    context = "All the world's a stage,"
+
+    context = FileUtils().preprocess_corpus(context)
     ############### parameters end #######################
-    k=250
+    k = 250
 
     # load corpus
     file_utils = FileUtils()
-    train_corpus = file_utils.load_corpus(Paths.shakespeare_clean_train)
-    test_corpus = file_utils.load_corpus(Paths.shakespeare_clean_test)
-    valid_corpus = file_utils.load_corpus(Paths.shakespeare_clean_valid)
-    
-    bpe = BPE(k=k)
+    vocab_dir_path = Paths.vocab_dir
+    vocab_path = vocab_dir_path / f"vocab_nNone_k{k}.txt"
+    vocab = FileUtils().load_vocab(vocab_path)
 
-    vocab_path = os.path.join("data", f"vocab_full_k{k}.txt")
-    bpe.load_vocab(vocab_path)
-    vocab = bpe.vocab
-    logger.info("loaded vocab")
+    bpe = BPE(k=k)
+    bpe.set_vocab(vocab)
+
+    tokenized_train = load_tokenized(
+        'Shakespeare_clean', 'train', vocab=vocab, bpe=bpe, k=k, n_chars=None)
+    tokenized_test = load_tokenized(
+        'Shakespeare_clean', 'test', vocab=vocab, bpe=bpe, k=k, n_chars=None)
+    tokenized_valid = load_tokenized(
+        'Shakespeare_clean', 'valid', vocab=vocab, bpe=bpe, k=k, n_chars=None)
+
+    logger.info(f"loaded vocab {len(vocab)}, {vocab}")
     encoded_vocab = bpe.encode(vocab)
-    logger.info("encoded vocab")
-    encoded_train = bpe.encode(train_corpus)
+    logger.info(f"encoded vocab {len(encoded_vocab)}, {encoded_vocab}")
+
+    print("train", tokenized_train[:10])
+    encoded_train = bpe.encode(tokenized_train)
+    print("train encoded", encoded_train[:10])
+    print("nique in encoded train", np.unique(np.array(encoded_train)))
+    print("nique in encoded vocab", np.unique(np.array(encoded_vocab)))
     logger.info("encoded train")
-    encoded_test = bpe.encode(test_corpus)
+    encoded_test = bpe.encode(tokenized_test)
     logger.info("encoded test")
-    encoded_valid = bpe.encode(valid_corpus)
+    encoded_valid = bpe.encode(tokenized_valid)
     logger.info("encoded valid")
+    tokenized_context = bpe.tokenize(context)
+    logger.info(f"tokenized context {tokenized_context}")
 
     m = NeuroNgram(vocab=np.array(encoded_vocab), n=n)
 
-    x, y = m.get_batch(data=encoded_train, batch_size=batch_size, context_size=context_size)
+    x, y = m.get_batch(data=encoded_train,
+                       batch_size=batch_size, context_size=context_size)
     print(x)
     print(y)
 
     print(x.shape, y.shape)
 
-
-    generate_example(m, bpe, encoded_valid)
-
-    logits, loss = m.forward(x, y)
+    logits, loss, pp = m.forward(x, y)
     print("logits \n", logits.shape, logits)
     print("loss", loss)
+
+    generate_example(m, bpe, tokenized_context)
+    pp = m.evaluate_perplexity_on_test(encoded_test)
+
 
 main()

@@ -58,6 +58,7 @@ class BPE:
         if not self.str_to_int_map:
             if not self.vocab:
                 raise ValueError("vocab is empty, cannot encode tokens.")
+            logger.info("creating string to int mapping")
             self.create_str_to_int_map(self.vocab)
         return [self.str_to_int_map[token] for token in tokens]
 
@@ -66,8 +67,19 @@ class BPE:
         if not self.int_to_str_map:
             if not self.vocab:
                 raise ValueError("vocab is empty, cannot decode tokens.")
+            logger.info("creating int to string mapping")
             self.create_int_to_str_map(self.vocab)
         return [self.int_to_str_map[token] for token in tokens]
+    
+    def tokenize(self, text, vocab=None):
+        if vocab is None:
+            if not self.vocab:
+                raise ValueError("you must provide a vocab list or BPE vocab must have been set")
+            vocab = self.vocab
+
+        tokenized, _, _ = self.test(vocab, text, min_token_length=0)
+        return tokenized
+        
 
     def get_unique_chars(self, corpus):
         """Get unique characters from the corpus (corpus as one str)."""
