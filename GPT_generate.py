@@ -9,8 +9,8 @@ import GPT_from_scratch as g
 # ----------------------------
 # Configuration 
 # ----------------------------
-MODEL_PATH      = Path("checkpoints/model_h4_l4_b32_it999.pt")  # <--- change to your file
-VOCAB_PATH      = Path("data/vocab_nNone_k10000.txt") 
+MODEL_PATH      = Path("checkpoints\model_h4_l6_b128_it10000.pt")  # <--- change to your file
+VOCAB_PATH      = Path("data/vocab_nNone_k2000.txt") 
 DEVICE          = "cuda" if torch.cuda.is_available() else "cpu"
 
 START_IDS       = [0]    # prompt as token IDs; change if your BOS isn't 0

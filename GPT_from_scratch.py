@@ -3,29 +3,65 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from save_utils import save_checkpoint
+# from save_utils import save_checkpoint
 
 # ----------------------------
 # Paths / data format
 # ----------------------------
 TRAIN_IDS_TXT = Path("gpt_bin/train.txt")            # whitespace-delimited integers
 VAL_IDS_TXT   = Path("gpt_bin/val.txt")              # whitespace-delimited integers
-VOCAB_TOKENS_TXT = Path("data/vocab_nNone_k10000.txt")  # JSON list of strings; set to None to disable decoding
+VOCAB_TOKENS_TXT = Path("data/vocab_nNone_k3000.txt")  # JSON list of strings; set to None to disable decoding
+
+# # ----------------------------
+# # Hyperparameters - Small model
+# # ----------------------------
+# batch_size    = 16         # sequences per batch
+# block_size    = 32         # context length
+# max_iters     = 1000
+# eval_interval = 100
+# learning_rate = 1e-3
+# eval_iters    = 200
+# n_embd        = 64
+# n_head        = 4
+# n_layer       = 4
+# dropout       = 0.0
 
 # ----------------------------
-# Hyperparameters
+# Hyperparameters - Medium model
 # ----------------------------
-batch_size    = 16         # sequences per batch
-block_size    = 32         # context length
-max_iters     = 1000
-eval_interval = 100
-learning_rate = 1e-3
-eval_iters    = 200
-n_embd        = 64
+batch_size    = 512         # sequences per batch
+block_size    = 128         # context length
+max_iters     = 50000
+eval_interval = 500
+learning_rate = 1e-4
+eval_iters    = 250
+n_embd        = 256
 n_head        = 4
-n_layer       = 4
-dropout       = 0.0
+n_layer       = 6
+dropout       = 0.1
+
+# # ----------------------------
+# # Hyperparameters - Large model
+# # ----------------------------
+# batch_size    = 128         # sequences per batch
+# block_size    = 128        # context length
+# max_iters     = 20000
+# eval_interval = 2000
+# learning_rate = 3e-4
+# eval_iters    = 400
+# n_embd        = 256
+# n_head        = 16
+# n_layer       = 12
+# dropout       = 0.1
+
+
+# ----------------------------
+# Device
+# ----------------------------
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
+
+
 
 # ----------------------------
 # Data loading helpers
@@ -199,6 +235,8 @@ class GPT(nn.Module):
 
 def main():
     torch.manual_seed(420)
+    # print device
+    print(f"[info] using device: {device}")
 
     # Load data
     train_data = read_ids_from_txt(TRAIN_IDS_TXT)

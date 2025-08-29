@@ -5,7 +5,7 @@ from utils import FileUtils, Paths
 from bpe_class import BPE
 
 # ---- params ----
-K = 10000  # <-- pick your k here
+K = 5000  # <-- pick your k here
 
 # ---- paths (constructed, not hard-coded attributes) ----
 vocab_path = Path(Paths.vocab_dir) / f"vocab_nNone_k{K}.txt"
