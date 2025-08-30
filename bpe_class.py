@@ -4,14 +4,13 @@ import os
 import time
 from collections import Counter
 from pathlib import Path
-
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from tqdm import tqdm
-from utils import FileUtils, Paths
+from loading_utils import FileUtils, Paths
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,
@@ -338,19 +337,18 @@ def main():
     results_dir = "results_bpe"
     os.makedirs(results_dir, exist_ok=True)
 
-    ks = [100, 250, 500, 750, 1000, 1500, 2000, 5000, 7500, 10000]
+    ks = [10, 25, 50]
+    n_chars = None  # set to None to load full corpus
     vocabs = []
-    for k in ks:
-        # params
-        n_chars = None  # set to None to load full corpus
 
+    for k in ks:
         corpus = FileUtils().load_corpus(shakespeare_train_path, window_size=n_chars)
         id_test_set = FileUtils().load_corpus(shakespeare_test_path, window_size=n_chars)
         ood_test_set = FileUtils().load_corpus(sms_path, window_size=n_chars)
 
         # test bpe
         bpe = BPE(k=k)
-        bpe.set_vocab(FileUtils().load_vocab(vocab_path))
+        #bpe.set_vocab(FileUtils().load_vocab(vocab_path))
         tokenized_corpus_list, vocab = bpe.train(corpus=corpus, k=k)
         vocabs.append(vocab)
 
@@ -363,12 +361,12 @@ def main():
         os.makedirs(Paths.tokenized_dir, exist_ok=True)
         FileUtils.store_vocab(list(tokenized_corpus_list), Paths.tokenized_dir, corpus_name)
 
-        bpe.evaluate_token_length(vocab, corpus, id_test_set, ood_test_set, save=True,
-                                  save_dir=results_dir, save_name=f"token_length_distribution_k_{k}.png", n_chars=n_chars, k=k)
+        #bpe.evaluate_token_length(vocab, corpus, id_test_set, ood_test_set, save=True,
+        #                          save_dir=results_dir, save_name=f"token_length_distribution_k_{k}.png", n_chars=n_chars, k=k)
 
     # plots
-    bpe.plot_coverages(vocabs, ks, corpus, id_test_set,
-                       ood_test_set, 10, save=True, save_dir=results_dir)
+    # bpe.plot_coverages(vocabs, ks, corpus, id_test_set,
+    #                    ood_test_set, 10, save=True, save_dir=results_dir)
 
 
 if __name__ == "__main__":

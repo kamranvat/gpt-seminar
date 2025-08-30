@@ -4,13 +4,24 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 # from save_utils import save_checkpoint
+from GPT_encode import GPTEncoder
 
 # ----------------------------
-# Paths / data format
+# Set K, encode, export .bin/.txt
+# ----------------------------
+K = 10
+# recreate gpt_bin files if not exist (for convenience, TODO remove?)
+if __name__ == "__main__":
+    encoder = GPTEncoder(k=K)
+    encoder.export(data_dir="gpt_bin")
+
+# ----------------------------
+# Paths / data format / saving
 # ----------------------------
 TRAIN_IDS_TXT = Path("gpt_bin/train.txt")            # whitespace-delimited integers
 VAL_IDS_TXT   = Path("gpt_bin/val.txt")              # whitespace-delimited integers
-VOCAB_TOKENS_TXT = Path("data/vocab_nNone_k3000.txt")  # JSON list of strings; set to None to disable decoding
+VOCAB_TOKENS_TXT = Path(f"data/vocab_nNone_k{K}.txt")  # JSON list of strings; set to None to disable decoding
+SAVE_INTERVAL = 4000
 
 # # ----------------------------
 # # Hyperparameters - Small model
@@ -31,7 +42,7 @@ VOCAB_TOKENS_TXT = Path("data/vocab_nNone_k3000.txt")  # JSON list of strings; s
 # ----------------------------
 batch_size    = 512         # sequences per batch
 block_size    = 128         # context length
-max_iters     = 50000
+max_iters     = 42000
 eval_interval = 500
 learning_rate = 1e-4
 eval_iters    = 250
@@ -54,14 +65,10 @@ dropout       = 0.1
 # n_layer       = 12
 # dropout       = 0.1
 
-
 # ----------------------------
 # Device
 # ----------------------------
 device = "cuda" if torch.cuda.is_available() else "cpu"
-
-
-
 
 # ----------------------------
 # Data loading helpers
@@ -84,12 +91,12 @@ def read_vocab_json(path: Path) -> list[str]:
         raise ValueError("Vocab file must be a JSON list of strings.")
     return vocab_tokens
 
-def build_model_path(out_root: Path, n_head: int, n_layer: int, block_size: int, step: int | None = None):
+def build_model_path(out_root: Path, n_head: int, n_layer: int, block_size: int, step: int, k: int | None = None):
     """
     Returns checkpoints/<folder>/model_h{n_head}_l{n_layer}_b{block_size}[_it{step}].pt
     """
     out_root.mkdir(parents=True, exist_ok=True)
-    name = f"model_h{n_head}_l{n_layer}_b{block_size}"
+    name = f"model_h{n_head}_l{n_layer}_b{block_size}_k{k}"
     if step is not None:
         name += f"_it{step}"
     return out_root / f"{name}.pt"
@@ -167,7 +174,7 @@ class FeedForward(nn.Module):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(n_embd, 4 * n_embd),
-            nn.ReLU(),
+            nn.GELU(), # use gaussian error linear units
             nn.Linear(4 * n_embd, n_embd),
             nn.Dropout(dropout),
         )
@@ -289,9 +296,9 @@ def main():
             losses = estimate_loss(model, train_data, val_data, device)
             print(f"step {iter}: train {losses['train']:.4f}, val {losses['val']:.4f}")
 
-        if iter % 1000 == 0 or iter == max_iters - 1:
+        if iter % SAVE_INTERVAL == 0 or iter == max_iters - 1:
             out_root = Path("checkpoints")                # same folder you used before
-            save_path = build_model_path(out_root, n_head, n_layer, block_size, step=iter)
+            save_path = build_model_path(out_root, n_head, n_layer, block_size, step=iter, k=K)
             torch.save(model, save_path)                  # <-- save the entire model object
             print(f"[saved] {save_path}")
 
