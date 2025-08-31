@@ -778,9 +778,7 @@ $$
 
 where $i$ is the current iteration and $\lambda$ is the decay rate hyperparameter. With the resulting (decaying) chance, the model would get teacher-forced input during training. 
 
-With this setup, we trained the four models for k's 5, 10, 25, and 50, each of them reaching their optimal validation loss at 16.000 or 20.000 training steps, respectively:
-
-[TODO] insert tensorboard plots
+With this setup, we trained the four models for k's 5, 10, 25, and 50, each of them reaching their optimal validation loss at 16.000 or 20.000 training steps, as visible in the training plots above.
 
 ### Evaluation
 The models reach the following perplexities, confirming the earlier (n-gram) result that a lower k leads to lower perplexity.
