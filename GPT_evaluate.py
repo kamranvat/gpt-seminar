@@ -8,9 +8,11 @@ import json
 # Model and Test Configuration
 # ----------------------------
 MODELS = [
-    Path("checkpoints/model_h4_l6_b128_k10_it20000.pt"),
+    Path("checkpoints/model_h4_l6_b256_k5_it20000_lam5000.pt"),
+    Path("checkpoints/model_h4_l6_b256_k10_it20000_lam5000.pt"),
     Path("checkpoints/model_h4_l6_b256_k25_it16000_lam5000.pt"),
-    Path("checkpoints/model_h4_l6_b128_k100_it20000.pt"),
+    Path("checkpoints/model_h4_l6_b256_k50_it16000_lam5000.pt"),
+    Path("checkpoints/model_h4_l6_b256_k10_it16000.pt")
 ]
 
 TEST_PROMPTS = [
@@ -34,8 +36,8 @@ TEST_PROMPTS = [
 ]
 
 # Parameters
-MAX_NEW_TOKENS = 200
-TEMPERATURE = 0.8
+MAX_NEW_TOKENS = 1000
+TEMPERATURE = 0.7
 TOP_K = 40
 TOP_P = 0.95
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -147,6 +149,7 @@ def decode_ids(ids: list[int], id_to_token: list[str] | None):
 # Evaluation Loop
 # ----------------------------
 def main():
+    output_lines = []
     for model_path in MODELS:
         params = extract_model_params(model_path)
         K = params["K"]
@@ -154,10 +157,10 @@ def main():
         VOCAB_PATH = Path(f"data/vocab_nNone_k{K}.txt")
         gpt_encoder = GPTEncoder(k=K)
         id_to_token = load_vocab_tokens(VOCAB_PATH) if VOCAB_PATH.exists() else None
-        print(f"\n==============================")
-        print(f"Testing Model: {model_path.name}")
-        print(f"Params: {params}")
-        print(f"==============================\n")
+        output_lines.append(f"\n==============================")
+        output_lines.append(f"Testing Model: {model_path.name}")
+        output_lines.append(f"Params: {params}")
+        output_lines.append(f"==============================\n")
         model = load_full_model(model_path, DEVICE)
         for prompt, test_type in TEST_PROMPTS:
             start_ids = gpt_encoder.encode_string(prompt.casefold())
@@ -170,11 +173,17 @@ def main():
                 top_p=TOP_P,
                 device=DEVICE,
             )
-            print(f"--- Test: {test_type} ---")
-            print(f"Prompt: {prompt}")
-            print("Output:")
-            print(decode_ids(gen_ids, id_to_token))
-            print("-------------------------\n")
+            output_lines.append(f"--- Test: {test_type} ---")
+            output_lines.append(f"Prompt: {prompt}")
+            output_lines.append("Output:")
+            output_lines.append(str(decode_ids(gen_ids, id_to_token)))
+            output_lines.append("-------------------------\n")
+    # Print and write to file
+    for line in output_lines:
+        print(line)
+    with open("evaluation_output.txt", "w", encoding="utf-8") as f:
+        for line in output_lines:
+            f.write(line + "\n")
 
 if __name__ == "__main__":
     main()
