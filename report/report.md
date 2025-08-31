@@ -742,6 +742,8 @@ Validation loss:
 
 We initially trained one model with a context size of 128, 4 attention heads, and 6 layers on a corpus segmented with k=10. Training was performed on a Nvidia RTX 5070ti GPU for 50.000 iterations, to observe the amount of overfitting we would achieve. The training and validation loss during training can be seen below:
 
+<img width="640" height="480" alt="Training and validation loss over 50k steps." src="https://github.com/user-attachments/assets/d780e3be-a293-4688-8b9a-c4cb188ad206" />
+
 This yielded three key results:
 - the results at roughly the time of divergence were pretty good compared to the n-grams (see quote at the beginning of this chapter), but we felt there might still be some improvement possible. 
 - the validation loss diverges strongly from the training loss, but behaves relatively smoothly. 
