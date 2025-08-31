@@ -15,7 +15,7 @@ from GPT_encode import GPTEncoder
 # ----------------------------
 # Set K, encode, export .bin/.txt
 # ----------------------------
-K = 10
+K = 5
 # recreate gpt_bin files if not exist (for convenience, TODO remove?)
 if __name__ == "__main__":
     encoder = GPTEncoder(k=K)
@@ -30,6 +30,18 @@ VOCAB_TOKENS_TXT = Path(
     f"data/vocab_nNone_k{K}.txt"
 )  # JSON list of strings; set to None to disable decoding
 SAVE_INTERVAL = 4000
+
+# ----------------------------
+# Train from checkpoint (optional)
+# ----------------------------
+# WARNING if there is no checkpoint, do not run the next lines
+# (might crash GPU memory)
+# NOTE remember to uncomment checkpoint loading in the train loop, too
+# if you want to resume training from a checkpoint, specify the path here
+# (else, comment out the next three lines)
+# CHECKPOINT_PATH = Path("checkpoints/model_h4_l6_b256_k10_it8000_lam5000.pt")
+# CHECKPOINT_ITER = 8000
+# print(f"loaded checkpoint - resuming training at iter {CHECKPOINT_ITER}")
 
 # # ----------------------------
 # # Hyperparameters - Small model
@@ -401,8 +413,18 @@ def main():
     best_model_state = None
     best_iter = 0
 
+    # NOTE: to use this, uncomment checkpoint path checking at beginning of file
+    # # Load from checkpoint (optional) - NOTE this will "lose" patience, so it might train a bit extra
+    # if CHECKPOINT_PATH.exists():
+    #     model = torch.load(CHECKPOINT_PATH, map_location=device, weights_only=False)
+    #     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    #     start_iter = CHECKPOINT_ITER
+    # else:
+    #     start_iter = 0
+
+    start_iter = 0
     # Train
-    for iter in range(max_iters):
+    for iter in range(start_iter, max_iters):
         # evaluate occasionally
         if iter % eval_interval == 0 or iter == max_iters - 1:
             losses = estimate_loss(model, train_data, val_data, device)
