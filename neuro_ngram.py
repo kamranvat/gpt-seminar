@@ -25,8 +25,7 @@ class NeuroNgram(nn.Module):
         self.n = n
         self.vocab = vocab
         self.vocab_size = len(vocab)
-        self.embedding = nn.Embedding(
-            self.vocab_size ** (self.n - 1), self.vocab_size)
+        self.embedding = nn.Embedding(self.vocab_size ** (self.n - 1), self.vocab_size)
 
     def forward(self, context, target=None):
         # expected one hot encoded target
@@ -41,7 +40,7 @@ class NeuroNgram(nn.Module):
             targets_view = target.view(batch_size * context_size)
             probs = torch.log(F.softmax(logits_view))
             target_probs = probs[torch.arange(len(probs)), targets_view]
-            pp = torch.pow(2, -torch.sum(target_probs)/(len(targets_view)))
+            pp = torch.pow(2, -torch.sum(target_probs) / (len(targets_view)))
 
             loss = F.cross_entropy(logits_view, targets_view)
 
@@ -58,8 +57,9 @@ class NeuroNgram(nn.Module):
                 encoded_context = torch.tensor([[0]])
             else:
                 # add batch dimension back for forward pass
-                context = prediction[0, -(self.n-1)
-                                          :].clone().unsqueeze(0).unsqueeze(0)
+                context = (
+                    prediction[0, -(self.n - 1) :].clone().unsqueeze(0).unsqueeze(0)
+                )
                 encoded_context = self.encode(context)
             logits, loss, _ = self(encoded_context)
             # look at last timestep
@@ -67,23 +67,22 @@ class NeuroNgram(nn.Module):
             # softmax for probs
             probs = F.softmax(logits, dim=-1)
             # sample
-            next_context = torch.multinomial(
-                probs, num_samples=1)  # [batchsize, 1]
+            next_context = torch.multinomial(probs, num_samples=1)  # [batchsize, 1]
             # append sampled to sequence
 
             prediction = torch.cat(
-                (prediction, next_context), dim=1)  # [batchsize, t+1]
-        return prediction[0, self.n-1:]
+                (prediction, next_context), dim=1
+            )  # [batchsize, t+1]
+        return prediction[0, self.n - 1 :]
 
     def get_batch(self, data, batch_size, context_size):
         start_indices = torch.randint(
             low=0, high=(len(data) - (context_size + self.n)), size=(batch_size,)
         )
         context_start_indices = [
-            data[j: j + context_size + self.n - 2] for j in start_indices
+            data[j : j + context_size + self.n - 2] for j in start_indices
         ]
-        c = torch.unfold_copy(torch.tensor(
-            context_start_indices), 1, self.n-1, 1)
+        c = torch.unfold_copy(torch.tensor(context_start_indices), 1, self.n - 1, 1)
         # need to multiply first value with vocab size and then sum along last axis
         for n in range(0, self.n - 2):
             c[:, :, n] *= self.vocab_size
@@ -92,8 +91,7 @@ class NeuroNgram(nn.Module):
         x = torch.sum(c, dim=-1)
         y = torch.stack(
             [
-                torch.tensor(data[i + self.n - 1: i +
-                             self.n + context_size - 1])
+                torch.tensor(data[i + self.n - 1 : i + self.n + context_size - 1])
                 for i in start_indices
             ]
         )
@@ -110,17 +108,18 @@ class NeuroNgram(nn.Module):
     def decode(self, c):
         return c % self.vocab_size
 
-    def evaluate_perplexity_on_test(self, tokenized_test, batch_size=None, context_size=None):
+    def evaluate_perplexity_on_test(
+        self, tokenized_test, batch_size=None, context_size=None
+    ):
         # reshape to get batches
         # [TODO] adapt to be able to use actual batches
         # for now stick to batches of size 1 to avoid issues when it cannot be divided by the batch size
         # need to keep context size to 1 as well in that case
 
         context = tokenized_test[:-1]
-        target = tokenized_test[self.n-1:]
+        target = tokenized_test[self.n - 1 :]
 
-        c = torch.unfold_copy(torch.tensor(
-            context).unsqueeze(0), 1, self.n-1, 1)
+        c = torch.unfold_copy(torch.tensor(context).unsqueeze(0), 1, self.n - 1, 1)
         # need to multiply first value with vocab size and then sum along last axis
         for n in range(0, self.n - 2):
             c[:, :, n] *= self.vocab_size
@@ -151,7 +150,7 @@ def train(
     save_top_k=None,
     generate_context=None,
     generate_examples_every_x=100,
-    bpe=None
+    bpe=None,
 ):
 
     steps_without_validation_improvement = 0
@@ -203,7 +202,10 @@ def train(
                     files = glob(str(model_save_dir / f"step_*"))
 
                     if len(files) > save_top_k:
-                        def extract_steps(x): return int(x.split("_")[3])
+
+                        def extract_steps(x):
+                            return int(x.split("_")[3])
+
                         file_steps = [extract_steps(f) for f in files]
                         oldest_index = np.argmin(file_steps)
                         # delete oldest model
@@ -226,8 +228,7 @@ def train(
                     f"Early stopping triggered at step {step}, reverting back to step {step-patience}"
                 )
                 # match path
-                best_path = glob(
-                    str(model_save_dir / f"step_{step-patience}_*"))[0]
+                best_path = glob(str(model_save_dir / f"step_{step-patience}_*"))[0]
                 model.load_state_dict(torch.load(best_path, weights_only=True))
                 break
 
@@ -241,12 +242,12 @@ def generate_example(m, bpe, tokenized_context):
     context = bpe.encode(tokenized_context)
 
     # cut to correct length for n and convert to tesor
-    context = torch.unsqueeze(torch.unsqueeze(
-        torch.tensor(context[:m.n-1]), 0), 0)
+    context = torch.unsqueeze(torch.unsqueeze(torch.tensor(context[: m.n - 1]), 0), 0)
     o = m.predict(context)
     # need to decode each sequence in batch separately
     logger.info(
-        f"generated example: {''.join(tokenized_context)}{''.join(bpe.decode(o.tolist()))}")
+        f"generated example: {''.join(tokenized_context)}{''.join(bpe.decode(o.tolist()))}"
+    )
 
 
 def main():
@@ -254,7 +255,9 @@ def main():
     n = 1
     context_size = 256
     batch_size = 256
-    patience = 100  # stop early if validation loss has not improved for this number of times
+    patience = (
+        100  # stop early if validation loss has not improved for this number of times
+    )
     validate_every_x = 1  # run validation every x steps
     steps = 10000
     save_top_k = 1
@@ -280,8 +283,6 @@ def main():
         else "mps" if torch.backends.mps.is_available() else "cpu"
     )
     logger.info(f"Using device: {device}")
-    
-
 
     # lists for storing results
     list_i = []
@@ -303,11 +304,14 @@ def main():
             bpe.set_vocab(vocab)
 
             tokenized_train = FileUtils().load_tokenized(
-                'Shakespeare_clean', 'train', vocab=vocab, bpe=bpe, k=k, n_chars=None)
+                "Shakespeare_clean", "train", vocab=vocab, bpe=bpe, k=k, n_chars=None
+            )
             tokenized_test = FileUtils().load_tokenized(
-                'Shakespeare_clean', 'test', vocab=vocab, bpe=bpe, k=k, n_chars=None)
+                "Shakespeare_clean", "test", vocab=vocab, bpe=bpe, k=k, n_chars=None
+            )
             tokenized_valid = FileUtils().load_tokenized(
-                'Shakespeare_clean', 'valid', vocab=vocab, bpe=bpe, k=k, n_chars=None)
+                "Shakespeare_clean", "valid", vocab=vocab, bpe=bpe, k=k, n_chars=None
+            )
 
             tokenized_context = bpe.tokenize(context)
             logger.info(f"tokenized context {tokenized_context}")
@@ -338,7 +342,6 @@ def main():
                 torch.optim.AdamW(m.parameters(), lr=1e-1),
                 torch.optim.AdamW(m.parameters(), lr=25e-2),
                 torch.optim.AdamW(m.parameters(), lr=5e-1),
-
             ]  # could also add , torch.optim.RMSprop
 
             logger.info("created optimizers")
@@ -365,7 +368,7 @@ def main():
                 save_top_k=save_top_k,
                 generate_context=tokenized_context,
                 generate_examples_every_x=generate_example_every,
-                bpe=bpe
+                bpe=bpe,
             )
 
             # compute perplexity on train
@@ -394,7 +397,14 @@ def main():
             list_pp.append(pp.item())
 
             df = pd.DataFrame(
-                {"k": list_k, "n": list_n, "i": list_i, "perplexity": list_pp, "type": list_type})
+                {
+                    "k": list_k,
+                    "n": list_n,
+                    "i": list_i,
+                    "perplexity": list_pp,
+                    "type": list_type,
+                }
+            )
             df.to_csv(csv_path)
 
             logger.info("finished training")

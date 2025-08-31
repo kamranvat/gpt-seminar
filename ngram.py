@@ -416,6 +416,7 @@ class NGram:
         probability = self.get_probability(test)
         return np.power(2, -probability / len(test))
 
+
 def main():
     # paths
     vocab_dir_path = Paths.vocab_dir

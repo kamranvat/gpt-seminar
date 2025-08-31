@@ -440,7 +440,6 @@ def main():
                 model.load_state_dict(best_model_state)
                 break
 
-
         # Save model checkpoints regularly
         if (iter % SAVE_INTERVAL == 0 or iter == max_iters - 1) and iter > 0:
             save_path = build_model_path(

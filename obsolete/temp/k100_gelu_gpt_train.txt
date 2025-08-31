@@ -1,0 +1,67 @@
+train has 500,337 tokens
+val has 60,944 tokens
+[info] using device: cuda
+[info] max_id=140, vocab_size=141
+[info] model parameters: 4.803M
+step 0: train 166.8770, val 166.6291
+[saved] checkpoints\model_h4_l6_b128_kNone_it0.pt
+step 500: train 4.6636, val 4.6515
+step 1000: train 4.0750, val 4.0706
+[saved] checkpoints\model_h4_l6_b128_kNone_it1000.pt
+step 1500: train 3.7263, val 3.7256
+step 2000: train 3.5685, val 3.5723
+[saved] checkpoints\model_h4_l6_b128_kNone_it2000.pt
+step 2500: train 3.4619, val 3.4693
+step 3000: train 3.2561, val 3.2667
+[saved] checkpoints\model_h4_l6_b128_kNone_it3000.pt
+step 3500: train 3.0747, val 3.0893
+step 4000: train 2.9341, val 2.9583
+[saved] checkpoints\model_h4_l6_b128_kNone_it4000.pt
+step 4500: train 2.8220, val 2.8531
+step 5000: train 2.7125, val 2.7573
+[saved] checkpoints\model_h4_l6_b128_kNone_it5000.pt
+step 5500: train 2.6086, val 2.6664
+step 6000: train 2.5177, val 2.5918
+[saved] checkpoints\model_h4_l6_b128_kNone_it6000.pt
+step 6500: train 2.4406, val 2.5280
+step 7000: train 2.3655, val 2.4734
+[saved] checkpoints\model_h4_l6_b128_kNone_it7000.pt
+step 7500: train 2.3007, val 2.4265
+step 8000: train 2.2367, val 2.3874
+[saved] checkpoints\model_h4_l6_b128_kNone_it8000.pt
+step 8500: train 2.1822, val 2.3546
+step 9000: train 2.1266, val 2.3234
+[saved] checkpoints\model_h4_l6_b128_kNone_it9000.pt
+step 9500: train 2.0700, val 2.2989
+step 10000: train 2.0168, val 2.2818
+[saved] checkpoints\model_h4_l6_b128_kNone_it10000.pt
+step 10500: train 1.9659, val 2.2682
+step 11000: train 1.9111, val 2.2578
+[saved] checkpoints\model_h4_l6_b128_kNone_it11000.pt
+step 11500: train 1.8589, val 2.2483
+step 12000: train 1.7996, val 2.2515
+[saved] checkpoints\model_h4_l6_b128_kNone_it12000.pt
+step 12500: train 1.7449, val 2.2489
+step 13000: train 1.6891, val 2.2455
+[saved] checkpoints\model_h4_l6_b128_kNone_it13000.pt
+step 13500: train 1.6316, val 2.2490
+step 14000: train 1.5718, val 2.2618
+[saved] checkpoints\model_h4_l6_b128_kNone_it14000.pt
+step 14500: train 1.5120, val 2.2761
+step 15000: train 1.4586, val 2.2727
+[saved] checkpoints\model_h4_l6_b128_kNone_it15000.pt
+step 15500: train 1.4001, val 2.2900
+step 16000: train 1.3375, val 2.3171
+[saved] checkpoints\model_h4_l6_b128_kNone_it16000.pt
+step 16500: train 1.2793, val 2.3389
+step 17000: train 1.2284, val 2.3408
+[saved] checkpoints\model_h4_l6_b128_kNone_it17000.pt
+step 17500: train 1.1736, val 2.3626
+step 18000: train 1.1198, val 2.3792
+[saved] checkpoints\model_h4_l6_b128_kNone_it18000.pt
+step 18500: train 1.0653, val 2.4168
+step 19000: train 1.0168, val 2.4240
+[saved] checkpoints\model_h4_l6_b128_kNone_it19000.pt
+step 19500: train 0.9593, val 2.4761
+step 20000: train 0.9118, val 2.5018
+[saved] checkpoints\model_h4_l6_b128_kNone_it20000.pt

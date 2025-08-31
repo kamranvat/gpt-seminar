@@ -1,46 +1,24 @@
 from pathlib import Path
+import json
+import sys
+import types
 import torch
+import torch.nn.functional as F
 import GPT_from_scratch as g
 from GPT_encode import GPTEncoder
-import json
 
 # ----------------------------
-# Model and Test Configuration
 # ----------------------------
-MODELS = [
-    Path("trained_gpt_models/model_h4_l6_b256_k5_it20000_lam5000.pt"),
-    Path("trained_gpt_models/model_h4_l6_b256_k10_it20000_lam5000.pt"),
-    Path("trained_gpt_models/model_h4_l6_b256_k25_it16000_lam5000.pt"),
-    Path("trained_gpt_models/model_h4_l6_b256_k50_it16000_lam5000.pt"),
-    Path("trained_gpt_models/model_h4_l6_b128_k10_it16000.pt"),
-]
-
-TEST_PROMPTS = [
-    # Character entrance
-    ("Enter Cleopatra.", "Character Entrance"),
-    ("Enter Brutus.", "Character Entrance"),
-    ("Enter Hamlet.", "Character Entrance"),
-    # Sentiment
-    ("Sweet joy fills the court.", "Positive Sentiment"),
-    ("Dark grief weighs heavy on my heart.", "Negative Sentiment"),
-    # Famous
-    ("To be, or not to be: that is ", "Famous Line"),
-    ("All the world's a ", "Famous Line"),
-    ("All that glitters is not ", "Famous Line"),
-]
-
-# Parameters
-MAX_NEW_TOKENS = 256
-TEMPERATURE = 0.75
-TOP_K = 42
-TOP_P = 0.95
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+MODEL_PATH = Path("checkpoints/model_h4_l6_b128_k10_it16000.pt")  # Example filename
+START_TEXT = "All the world's a "
 
 
-# ----------------------------
-# Helper Functions
-# ----------------------------
 def extract_model_params(model_path: Path):
+    """
+    Extracts hyperparameters from the model filename.
+    Expected format: model_h{n_head}_l{n_layer}_b{block_size}_k{K}_it{iter}.pt
+    Returns a dict of params.
+    """
     filename = model_path.stem
     parts = filename.split("_")
     params = {}
@@ -60,6 +38,26 @@ def extract_model_params(model_path: Path):
     return params
 
 
+params = extract_model_params(MODEL_PATH)
+K = params["K"]
+BLOCK_SIZE = params.get("block_size", 128)  # fallback default
+
+VOCAB_PATH = Path(f"data/vocab_nNone_k{K}.txt")
+gpt_encoder = GPTEncoder(k=K)
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+START_IDS = gpt_encoder.encode_string(START_TEXT.casefold())
+MAX_NEW_TOKENS = 200
+TEMPERATURE = 0.8
+TOP_K = 40
+TOP_P = 0.95
+
+SAVE_WEIGHTS_ONLY_COPY = False
+
+# ----------------------------
+# Helpers
+# ----------------------------
+
+
 def load_vocab_tokens(vocab_path: Path | None):
     if not vocab_path:
         return None
@@ -70,12 +68,15 @@ def load_vocab_tokens(vocab_path: Path | None):
 
 
 def _alias_classes_into_main():
-    import sys, types
-
+    """
+    If the original checkpoint recorded classes under __main__.ClassName,
+    alias the current class definitions (from module `g`) into __main__ so pickle can resolve them.
+    """
     m = sys.modules.get("__main__")
     if m is None or m is not sys.modules["__main__"]:
         m = types.ModuleType("__main__")
         sys.modules["__main__"] = m
+    # Expose the expected class names
     m.Head = g.Head
     m.MultiHeadAttention = g.MultiHeadAttention
     m.FeedForward = g.FeedForward
@@ -84,8 +85,14 @@ def _alias_classes_into_main():
 
 
 def load_full_model(model_path: Path, device: str | torch.device):
+    """
+    Robust loader for a full-object checkpoint saved via torch.save(model, ...),
+    compatible with PyTorch 2.6 'weights_only' default and __main__ pickling.
+    """
     if not model_path.exists():
         raise FileNotFoundError(f"Model file not found: {model_path}")
+
+    # 1) Try safe load with allowlisted classes (keeps weights_only=True)
     try:
         from torch.serialization import safe_globals
 
@@ -96,7 +103,9 @@ def load_full_model(model_path: Path, device: str | torch.device):
         model.to(device).eval()
         return model
     except Exception:
-        pass
+        pass  # fall through to aliasing strategy
+
+    # 2) Alias classes into __main__ and load with weights_only=False (trusted files only!)
     _alias_classes_into_main()
     model = torch.load(model_path, map_location="cpu", weights_only=False)
     model.to(device).eval()
@@ -115,29 +124,37 @@ def generate_ids(
 ):
     model.eval()
     idx = torch.tensor(start_ids, dtype=torch.long, device=device).unsqueeze(0)
+
+    # infer block size
     if hasattr(model, "block_size"):
         block_size = int(model.block_size)
     else:
+        # fallback: use position embedding table size
         block_size = int(model.position_embedding_table.num_embeddings)
+
     for _ in range(max_new_tokens):
         idx_cond = idx[:, -block_size:]
         logits, _ = model(idx_cond)
         logits = logits[:, -1, :] / max(temperature, 1e-8)
+
         if top_k is not None:
             v, _ = torch.topk(logits, top_k)
             logits[logits < v[:, [-1]]] = -float("inf")
+
         if top_p is not None:
             sorted_logits, sorted_idx = torch.sort(logits, descending=True)
-            probs = torch.nn.functional.softmax(sorted_logits, dim=-1)
+            probs = F.softmax(sorted_logits, dim=-1)
             cumprobs = torch.cumsum(probs, dim=-1)
             mask = cumprobs > top_p
             mask[:, 1:] = mask[:, :-1].clone()
             mask[:, 0] = False
             sorted_logits[mask] = -float("inf")
+            # map back to original index order
             logits = torch.full_like(logits, -float("inf"))
             logits.scatter_(1, sorted_idx, sorted_logits)
-        probs = torch.nn.functional.softmax(logits, dim=-1)
-        idx_next = torch.multinomial(probs, 1)
+
+        probs = F.softmax(logits, dim=-1)
+        idx_next = torch.multinomial(probs, 1)  # (B,1)
         idx = torch.cat((idx, idx_next), dim=1)
     return idx[0].tolist()
 
@@ -145,48 +162,41 @@ def generate_ids(
 def decode_ids(ids: list[int], id_to_token: list[str] | None):
     if id_to_token is None:
         return f"(IDs) {ids}"
+    # Many BPE tokens include spaces; join directly
     return "".join(id_to_token[i] for i in ids if 0 <= i < len(id_to_token))
 
 
 # ----------------------------
-# Evaluation Loop
+# main
 # ----------------------------
 def main():
-    output_lines = []
-    for model_path in MODELS:
-        params = extract_model_params(model_path)
-        K = params["K"]
-        BLOCK_SIZE = params.get("block_size", 128)
-        VOCAB_PATH = Path(f"data/vocab_nNone_k{K}.txt")
-        gpt_encoder = GPTEncoder(k=K)
-        id_to_token = load_vocab_tokens(VOCAB_PATH) if VOCAB_PATH.exists() else None
-        output_lines.append(f"\n==============================")
-        output_lines.append(f"Testing Model: {model_path.name}")
-        output_lines.append(f"Params: {params}")
-        output_lines.append(f"==============================\n")
-        model = load_full_model(model_path, DEVICE)
-        for prompt, test_type in TEST_PROMPTS:
-            start_ids = gpt_encoder.encode_string(prompt.casefold())
-            gen_ids = generate_ids(
-                model,
-                start_ids=start_ids,
-                max_new_tokens=MAX_NEW_TOKENS,
-                temperature=TEMPERATURE,
-                top_k=TOP_K,
-                top_p=TOP_P,
-                device=DEVICE,
-            )
-            output_lines.append(f"--- Test: {test_type} ---")
-            output_lines.append(f"Prompt: {prompt}")
-            output_lines.append("Output:")
-            output_lines.append(str(decode_ids(gen_ids, id_to_token)))
-            output_lines.append("-------------------------\n")
-    # Print and write to file
-    for line in output_lines:
-        print(line)
-    with open("evaluation_output.txt", "w", encoding="utf-8") as f:
-        for line in output_lines:
-            f.write(line + "\n")
+    print(f"[loading] {MODEL_PATH}")
+    model = load_full_model(MODEL_PATH, DEVICE)
+
+    # (optional) create a weights-only copy for future painless loads
+    if SAVE_WEIGHTS_ONLY_COPY:
+        weights_path = MODEL_PATH.with_suffix(".weights.pt")
+        torch.save(model.state_dict(), weights_path)
+        print(f"[saved weights-only] {weights_path}")
+
+    id_to_token = load_vocab_tokens(VOCAB_PATH) if VOCAB_PATH else None
+
+    gen_ids = generate_ids(
+        model,
+        start_ids=START_IDS,
+        max_new_tokens=MAX_NEW_TOKENS,
+        temperature=TEMPERATURE,
+        top_k=TOP_K,
+        top_p=TOP_P,
+        device=DEVICE,
+    )
+
+    if id_to_token is None:
+        print("Generated IDs:", gen_ids)
+    else:
+        print("\n--- Generated Text ---\n")
+        print(decode_ids(gen_ids, id_to_token))
+        print("\n----------------------")
 
 
 if __name__ == "__main__":

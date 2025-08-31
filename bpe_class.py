@@ -13,8 +13,9 @@ from tqdm import tqdm
 from loading_utils import FileUtils, Paths
 
 # Configure logging
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger()
 
 
@@ -30,7 +31,7 @@ class BPE:
 
     def __getstate__(self):
         self_dict = self.__dict__.copy()
-        del self_dict['pool']
+        del self_dict["pool"]
         return self_dict
 
     def set_vocab(self, vocab):
@@ -69,16 +70,17 @@ class BPE:
             logger.info("creating int to string mapping")
             self.create_int_to_str_map(self.vocab)
         return [self.int_to_str_map[token] for token in tokens]
-    
+
     def tokenize(self, text, vocab=None):
         if vocab is None:
             if not self.vocab:
-                raise ValueError("you must provide a vocab list or BPE vocab must have been set")
+                raise ValueError(
+                    "you must provide a vocab list or BPE vocab must have been set"
+                )
             vocab = self.vocab
 
         tokenized, _, _ = self.test(vocab, text, min_token_length=0)
         return tokenized
-        
 
     def get_unique_chars(self, corpus):
         """Get unique characters from the corpus (corpus as one str)."""
@@ -109,9 +111,15 @@ class BPE:
 
     def get_most_frequent_pair_parallelized(self, corpus):
         # split the corpus and then get the counts on multiple workers
-        section_length = len(corpus)//(self.num_workers-2)
-        corpus_splits = [corpus[max(n*section_length-1, 0):min(
-            (n+1)*section_length, len(corpus)+1)] for n in range(self.num_workers)]
+        section_length = len(corpus) // (self.num_workers - 2)
+        corpus_splits = [
+            corpus[
+                max(n * section_length - 1, 0) : min(
+                    (n + 1) * section_length, len(corpus) + 1
+                )
+            ]
+            for n in range(self.num_workers)
+        ]
 
         results = self.pool.map(self.get_all_pair_counts, corpus_splits)
         counter = Counter()
@@ -151,8 +159,7 @@ class BPE:
                 break
             t_new = t_l + t_r
             vocab.append(t_new)
-            corpus_list = self.replace_most_frequent_pair(
-                corpus_list, t_new, t_l, t_r)
+            corpus_list = self.replace_most_frequent_pair(corpus_list, t_new, t_l, t_r)
         end = time.time()
         timer = end - start
         logger.info(f"training took {timer} s")
@@ -207,8 +214,7 @@ class BPE:
         matched_chars = []
 
         # arguments for worker processes
-        args_list = [(vocab, test_set, n, i)
-                     for i, n in enumerate(range(1, max_n + 1))]
+        args_list = [(vocab, test_set, n, i) for i, n in enumerate(range(1, max_n + 1))]
 
         # multiprocessing with min(cpu_cores, max_n) workers
         num_workers = min(multiprocessing.cpu_count(), max_n)
@@ -223,7 +229,18 @@ class BPE:
 
         return coverages
 
-    def plot_coverages(self, vocabs, ks, train_set, id_test_set, ood_test_set, max_n=3, save=False, save_dir="results", save_name="coverages.png"):
+    def plot_coverages(
+        self,
+        vocabs,
+        ks,
+        train_set,
+        id_test_set,
+        ood_test_set,
+        max_n=3,
+        save=False,
+        save_dir="results",
+        save_name="coverages.png",
+    ):
         if len(vocabs) != len(ks):
             raise ValueError("vocabs and ks must have the same length")
 
@@ -235,8 +252,7 @@ class BPE:
             coverages = self.evaluate(vocab, train_set, max_n=max_n)
             id_test_coverages = self.evaluate(vocab, id_test_set, max_n=max_n)
 
-            ood_test_coverages = self.evaluate(
-                vocab, ood_test_set, max_n=max_n)
+            ood_test_coverages = self.evaluate(vocab, ood_test_set, max_n=max_n)
             coverages_list.extend(coverages)
             id_test_coverages_list.extend(id_test_coverages)
             ood_test_coverages_list.extend(ood_test_coverages)
@@ -244,16 +260,25 @@ class BPE:
         fig, ax = plt.subplots(figsize=(12, 6), layout="tight")
         ax.xaxis.set_major_locator(matplotlib.ticker.MultipleLocator())
 
-        linestyles = ['-', "--", ":"]
-        x = np.tile(np.arange(start=1, stop=max_n + 1), len(ks*3))
+        linestyles = ["-", "--", ":"]
+        x = np.tile(np.arange(start=1, stop=max_n + 1), len(ks * 3))
         k_array = np.tile(np.array(ks).repeat(max_n), 3)
-        train_test = ['train']*max_n * \
-            len(ks) + ['ID test']*max_n*len(ks) + ['OOD test']*max_n*len(ks)
+        train_test = (
+            ["train"] * max_n * len(ks)
+            + ["ID test"] * max_n * len(ks)
+            + ["OOD test"] * max_n * len(ks)
+        )
 
         coverages_list.extend(id_test_coverages_list)
         coverages_list.extend(ood_test_coverages_list)
-        df = pd.DataFrame({"x": x, "k": k_array, "type": train_test,
-                          "coverages": np.array(coverages_list)})
+        df = pd.DataFrame(
+            {
+                "x": x,
+                "k": k_array,
+                "type": train_test,
+                "coverages": np.array(coverages_list),
+            }
+        )
 
         sns.lineplot(data=df, x="x", y="coverages", hue="type", style="k")
         ax.set_xlabel("x")
@@ -267,12 +292,26 @@ class BPE:
         else:
             plt.show()
 
-    def evaluate_token_length(self, vocab, train_set, id_test_set, ood_test_set, save=False, save_dir="results", save_name="token_length_distribution.png", n_chars=None, k=-1):
+    def evaluate_token_length(
+        self,
+        vocab,
+        train_set,
+        id_test_set,
+        ood_test_set,
+        save=False,
+        save_dir="results",
+        save_name="token_length_distribution.png",
+        n_chars=None,
+        k=-1,
+    ):
         """Compare metrics of the segmentation between the train and test set"""
 
         # arguments for worker processes
-        args_list = [(vocab, train_set, 1, 0),
-                     (vocab, id_test_set, 1, 1), (vocab, ood_test_set, 1, 2)]
+        args_list = [
+            (vocab, train_set, 1, 0),
+            (vocab, id_test_set, 1, 1),
+            (vocab, ood_test_set, 1, 2),
+        ]
         logger.info(f"Using {3} worker(s)...")
 
         with multiprocessing.Pool(3) as pool:
@@ -299,12 +338,11 @@ class BPE:
         ood_test_lengths = [len(token) for token in ood_test_set_segmented]
 
         plt.figure(figsize=(12, 6))
-        plt.hist(train_lengths, density=True, bins=30,
-                 alpha=0.5, label="Train Set")
-        plt.hist(id_test_lengths, density=True, bins=30,
-                 alpha=0.5, label="ID Test Set")
-        plt.hist(ood_test_lengths, density=True, bins=30,
-                 alpha=0.5, label="OOD Test Set")
+        plt.hist(train_lengths, density=True, bins=30, alpha=0.5, label="Train Set")
+        plt.hist(id_test_lengths, density=True, bins=30, alpha=0.5, label="ID Test Set")
+        plt.hist(
+            ood_test_lengths, density=True, bins=30, alpha=0.5, label="OOD Test Set"
+        )
         plt.axvline(
             np.mean(train_lengths), color="blue", linestyle="dashed", linewidth=1
         )
@@ -343,12 +381,14 @@ def main():
 
     for k in ks:
         corpus = FileUtils().load_corpus(shakespeare_train_path, window_size=n_chars)
-        id_test_set = FileUtils().load_corpus(shakespeare_test_path, window_size=n_chars)
+        id_test_set = FileUtils().load_corpus(
+            shakespeare_test_path, window_size=n_chars
+        )
         ood_test_set = FileUtils().load_corpus(sms_path, window_size=n_chars)
 
         # test bpe
         bpe = BPE(k=k)
-        #bpe.set_vocab(FileUtils().load_vocab(vocab_path))
+        # bpe.set_vocab(FileUtils().load_vocab(vocab_path))
         tokenized_corpus_list, vocab = bpe.train(corpus=corpus, k=k)
         vocabs.append(vocab)
 
@@ -359,14 +399,33 @@ def main():
         # store tokenized corpus for later use
         corpus_name = f"Shakespeare_clean_train_n{n_chars}_k{k}.txt"
         os.makedirs(Paths.tokenized_dir, exist_ok=True)
-        FileUtils.store_vocab(list(tokenized_corpus_list), Paths.tokenized_dir, corpus_name)
+        FileUtils.store_vocab(
+            list(tokenized_corpus_list), Paths.tokenized_dir, corpus_name
+        )
 
-        bpe.evaluate_token_length(vocab, corpus, id_test_set, ood_test_set, save=True,
-                                 save_dir=results_dir, save_name=f"token_length_distribution_k_{k}.png", n_chars=n_chars, k=k)
+        bpe.evaluate_token_length(
+            vocab,
+            corpus,
+            id_test_set,
+            ood_test_set,
+            save=True,
+            save_dir=results_dir,
+            save_name=f"token_length_distribution_k_{k}.png",
+            n_chars=n_chars,
+            k=k,
+        )
 
     # plots
-    bpe.plot_coverages(vocabs, ks, corpus, id_test_set,
-                       ood_test_set, 10, save=True, save_dir=results_dir)
+    bpe.plot_coverages(
+        vocabs,
+        ks,
+        corpus,
+        id_test_set,
+        ood_test_set,
+        10,
+        save=True,
+        save_dir=results_dir,
+    )
 
 
 if __name__ == "__main__":

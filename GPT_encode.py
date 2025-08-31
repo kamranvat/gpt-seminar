@@ -3,6 +3,7 @@ from pathlib import Path
 from loading_utils import FileUtils, Paths
 from bpe_class import BPE
 
+
 class GPTEncoder:
     def __init__(self, k=2000):
         self.K = k
@@ -12,15 +13,31 @@ class GPTEncoder:
         self.bpe = BPE(k=self.K)
         self.bpe.set_vocab(self.vocab)
         self.segmented_train = FileUtils().load_tokenized(
-            'Shakespeare_clean', 'train', vocab=self.vocab, bpe=self.bpe, k=self.K, n_chars=None)
+            "Shakespeare_clean",
+            "train",
+            vocab=self.vocab,
+            bpe=self.bpe,
+            k=self.K,
+            n_chars=None,
+        )
         self.segmented_valid = FileUtils().load_tokenized(
-            'Shakespeare_clean', 'valid', vocab=self.vocab, bpe=self.bpe, k=self.K, n_chars=None)
+            "Shakespeare_clean",
+            "valid",
+            vocab=self.vocab,
+            bpe=self.bpe,
+            k=self.K,
+            n_chars=None,
+        )
         self.vocab_size = len(self.bpe.vocab)
         self.dtype = np.uint16 if self.vocab_size < (1 << 16) else np.uint32
+
     def _maybe_generate_segmented_files(self):
         # If segmented files do not exist, generate them using BPE
         for split in ["train", "valid"]:
-            segmented_path = Path(Paths.tokenized_dir) / f"Shakespeare_clean_{split}_nNone_k{self.K}.txt"
+            segmented_path = (
+                Path(Paths.tokenized_dir)
+                / f"Shakespeare_clean_{split}_nNone_k{self.K}.txt"
+            )
             if not segmented_path.exists():
                 # Load vocab
                 vocab = FileUtils().load_vocab(self.vocab_path)
@@ -31,7 +48,11 @@ class GPTEncoder:
                 corpus = FileUtils().load_corpus(corpus_path, window_size=None)
                 # Tokenize and store
                 tokenized_corpus, _, _ = bpe.test(vocab, corpus)
-                FileUtils.store_vocab(list(tokenized_corpus), Paths.tokenized_dir, f"Shakespeare_clean_{split}_nNone_k{self.K}.txt")
+                FileUtils.store_vocab(
+                    list(tokenized_corpus),
+                    Paths.tokenized_dir,
+                    f"Shakespeare_clean_{split}_nNone_k{self.K}.txt",
+                )
 
     def _sanity_check_files(self):
         # Only check for vocab file, segmented files are handled by load_tokenized
