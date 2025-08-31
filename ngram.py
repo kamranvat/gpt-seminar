@@ -416,51 +416,23 @@ class NGram:
         probability = self.get_probability(test)
         return np.power(2, -probability / len(test))
 
-
-def load_tokenized(corpusname, type, vocab, bpe=None, k=100, n_chars=None):
-    if bpe is None:
-        bpe = BPE(k=k)
-
-    bpe.set_vocab(vocab)
-
-    path = Paths.tokenized_dir / f"{corpusname}_{type}_n{n_chars}_k{k}.txt"
-
-    if os.path.exists(path):
-        tokenized_corpus = FileUtils().load_vocab(path)
-    else:
-        logger.info(
-            "tokenized corpus has not been saved before, will be tokenized and stored now"
-        )
-        os.makedirs(Paths.tokenized_dir, exist_ok=True)
-        tokenized_corpus, _, _ = bpe.test(
-            vocab,
-            FileUtils().load_corpus(
-                Paths.corpus_dir / f"{corpusname}_{type}.txt", window_size=None
-            ),
-        )
-        corpus_name = f"{corpusname}_{type}_n{n_chars}_k{k}.txt"
-        FileUtils.store_vocab(list(tokenized_corpus), Paths.tokenized_dir, corpus_name)
-
-    return tokenized_corpus
-
-
 def main():
     # paths
     vocab_dir_path = Paths.vocab_dir
-
-    results_dir = "results_ngram"
-    os.makedirs(results_dir, exist_ok=True)
-    csv_path = Path(results_dir) / "perplexities1.csv"
-    context = "All the world's a stage,"
-
+    results_dir = Path("final_results") / "ngram"
+    csv_path = Path(results_dir) / "perplexities.csv"
+    context = "All the world's a"
     test_k = 1000
-    ks = [100, 250, 500, 750, 1000, 1500, 2000, 5000, 7500, 10000]
+    ks = [10, 25, 50, 100, 250, 500, 1000, 2000, 5000]
 
     use_laplace_smoothing = True
     use_interpolation = True
 
     lambda_samples = 10000
-    max_len = 100
+    max_len = 256
+
+    Path(results_dir).mkdir(parents=True, exist_ok=True)
+
     logger.info(f"use laplace smoothing {use_laplace_smoothing}")
     logger.info(f"use interpolation {use_interpolation}")
     logger.info(f"sampled for lambda optimization: {lambda_samples}")
@@ -482,16 +454,16 @@ def main():
 
         bpe = BPE(k=k)
         bpe.set_vocab(vocab)
-        tokenized_context, _, _ = bpe.test(vocab, context)
+        tokenized_context = bpe.tokenize(context)
         logger.info(f"tokenized context {tokenized_context}")
 
-        tokenized_train = load_tokenized(
+        tokenized_train = FileUtils().load_tokenized(
             "Shakespeare_clean", "train", vocab=vocab, bpe=bpe, k=k, n_chars=None
         )
-        tokenized_test = load_tokenized(
+        tokenized_test = FileUtils().load_tokenized(
             "Shakespeare_clean", "test", vocab=vocab, bpe=bpe, k=k, n_chars=None
         )
-        tokenized_valid = load_tokenized(
+        tokenized_valid = FileUtils().load_tokenized(
             "Shakespeare_clean", "valid", vocab=vocab, bpe=bpe, k=k, n_chars=None
         )
 
@@ -584,13 +556,13 @@ def main():
     tokenized_context, _, _ = bpe.test(vocab, context)
     logger.info(f"tokenized context {tokenized_context}")
 
-    tokenized_train = load_tokenized(
+    tokenized_train = FileUtils().load_tokenized(
         "Shakespeare_clean", "train", vocab=vocab, bpe=bpe, k=k, n_chars=None
     )
-    tokenized_test = load_tokenized(
+    tokenized_test = FileUtils().load_tokenized(
         "Shakespeare_clean", "test", vocab=vocab, bpe=bpe, k=k, n_chars=None
     )
-    tokenized_valid = load_tokenized(
+    tokenized_valid = FileUtils().load_tokenized(
         "Shakespeare_clean", "valid", vocab=vocab, bpe=bpe, k=k, n_chars=None
     )
 

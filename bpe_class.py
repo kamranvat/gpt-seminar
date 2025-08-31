@@ -334,10 +334,10 @@ def main():
     vocab_path = Paths.vocab_full_k250
     vocab_dir_path = Paths.vocab_dir
 
-    results_dir = "results_bpe"
+    results_dir = Path("final_results") / "bpe"
     os.makedirs(results_dir, exist_ok=True)
 
-    ks = [8, 12]
+    ks = [10, 25, 50, 100, 250, 500, 1000, 2000, 5000]
     n_chars = None  # set to None to load full corpus
     vocabs = []
 
@@ -361,12 +361,12 @@ def main():
         os.makedirs(Paths.tokenized_dir, exist_ok=True)
         FileUtils.store_vocab(list(tokenized_corpus_list), Paths.tokenized_dir, corpus_name)
 
-        #bpe.evaluate_token_length(vocab, corpus, id_test_set, ood_test_set, save=True,
-        #                          save_dir=results_dir, save_name=f"token_length_distribution_k_{k}.png", n_chars=n_chars, k=k)
+        bpe.evaluate_token_length(vocab, corpus, id_test_set, ood_test_set, save=True,
+                                 save_dir=results_dir, save_name=f"token_length_distribution_k_{k}.png", n_chars=n_chars, k=k)
 
     # plots
-    # bpe.plot_coverages(vocabs, ks, corpus, id_test_set,
-    #                    ood_test_set, 10, save=True, save_dir=results_dir)
+    bpe.plot_coverages(vocabs, ks, corpus, id_test_set,
+                       ood_test_set, 10, save=True, save_dir=results_dir)
 
 
 if __name__ == "__main__":

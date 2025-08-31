@@ -48,8 +48,7 @@ class FileUtils:
                 "tokenized corpus has not been saved before, will be tokenized and stored now"
             )
             Paths.tokenized_dir.mkdir(exist_ok=True, parents=True)
-            tokenized_corpus, _, _ = bpe.test(
-                vocab,
+            tokenized_corpus = bpe.tokenize(
                 FileUtils().load_corpus(
                     Paths.corpus_dir / f"{corpusname}_{type}.txt", window_size=None
                 ),

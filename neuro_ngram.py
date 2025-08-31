@@ -251,21 +251,27 @@ def generate_example(m, bpe, tokenized_context):
 
 def main():
     ############### define parameters ####################
-    n = 3
-    context_size = 128
-    batch_size = 64
+    n = 1
+    context_size = 256
+    batch_size = 256
     patience = 100  # stop early if validation loss has not improved for this number of times
     validate_every_x = 1  # run validation every x steps
     steps = 10000
     save_top_k = 1
-    generate_example_every = 500
-    model_save_dir = Paths.model_dir
+    generate_example_every = 250
+    model_save_dir = Paths.model_dir / f"neural_ngram_n{n}"
     vocab_dir_path = Paths.vocab_dir
-    results_dir = f"results_neural_ngram_n{n}"
+    results_dir = Path("final_results") / f"neural_ngram_n{n}"
     csv_path = Path(results_dir) / f"perplexities_n{n}.csv"
+    context = "All the world's a"
+
+    # test different ks
+    ks = [10, 25, 50, 100, 250, 500, 1000, 2000, 5000]
+    ############### parameters end #######################
+
     # Ensure results directory exists
     Path(results_dir).mkdir(parents=True, exist_ok=True)
-    context = "All the world's a stage,"
+    context = FileUtils().preprocess_corpus(context)
 
     # set device to whats available (cuda, mps, cpu)
     device = torch.device(
@@ -274,15 +280,8 @@ def main():
         else "mps" if torch.backends.mps.is_available() else "cpu"
     )
     logger.info(f"Using device: {device}")
-    ############### parameters end #######################
+    
 
-    context = FileUtils().preprocess_corpus(context)
-
-
-    os.makedirs(results_dir, exist_ok=True)
-
-    # test different ks
-    ks = [100, 250, 500, 750, 1000, 1500, 2000, 5000, 7500, 10000]
 
     # lists for storing results
     list_i = []
@@ -401,72 +400,6 @@ def main():
             logger.info("finished training")
             for _ in range(5):
                 generate_example(m, bpe, tokenized_context)
-
-
-def test():
-    ############### define parameters ####################
-    n = 1
-    context_size = 6
-    batch_size = 4
-    patience = 5  # stop early if validation loss has not improved for this number of times
-    validate_every_x = 1  # run validation every x steps
-    steps = 3
-    model_save_dir = "models"
-
-    context = "All the world's a stage,"
-
-    context = FileUtils().preprocess_corpus(context)
-    ############### parameters end #######################
-    k = 250
-
-    # load corpus
-    file_utils = FileUtils()
-    vocab_dir_path = Paths.vocab_dir
-    vocab_path = vocab_dir_path / f"vocab_nNone_k{k}.txt"
-    vocab = FileUtils().load_vocab(vocab_path)
-
-    bpe = BPE(k=k)
-    bpe.set_vocab(vocab)
-
-    tokenized_train = load_tokenized(
-        'Shakespeare_clean', 'train', vocab=vocab, bpe=bpe, k=k, n_chars=None)
-    tokenized_test = load_tokenized(
-        'Shakespeare_clean', 'test', vocab=vocab, bpe=bpe, k=k, n_chars=None)
-    tokenized_valid = load_tokenized(
-        'Shakespeare_clean', 'valid', vocab=vocab, bpe=bpe, k=k, n_chars=None)
-
-    logger.info(f"loaded vocab {len(vocab)}, {vocab}")
-    encoded_vocab = bpe.encode(vocab)
-    logger.info(f"encoded vocab {len(encoded_vocab)}, {encoded_vocab}")
-
-    print("train", tokenized_train[:10])
-    encoded_train = bpe.encode(tokenized_train)
-    print("train encoded", encoded_train[:10])
-    print("nique in encoded train", np.unique(np.array(encoded_train)))
-    print("nique in encoded vocab", np.unique(np.array(encoded_vocab)))
-    logger.info("encoded train")
-    encoded_test = bpe.encode(tokenized_test)
-    logger.info("encoded test")
-    encoded_valid = bpe.encode(tokenized_valid)
-    logger.info("encoded valid")
-    tokenized_context = bpe.tokenize(context)
-    logger.info(f"tokenized context {tokenized_context}")
-
-    m = NeuroNgram(vocab=np.array(encoded_vocab), n=n)
-
-    x, y = m.get_batch(data=encoded_train,
-                       batch_size=batch_size, context_size=context_size)
-    print(x)
-    print(y)
-
-    print(x.shape, y.shape)
-
-    logits, loss, pp = m.forward(x, y)
-    print("logits \n", logits.shape, logits)
-    print("loss", loss)
-
-    generate_example(m, bpe, tokenized_context)
-    pp = m.evaluate_perplexity_on_test(encoded_test)
 
 
 main()
