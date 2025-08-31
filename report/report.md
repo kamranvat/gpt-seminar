@@ -272,7 +272,7 @@ The generation system handles variable-length contexts and implements fallback s
 
 #### 2.4.3 Results
 Below are some generated examples for the different n-gram models.
-All models were provided the same context – `All the world's a` – which was preprocessed and tokenized using BPE.
+All models were provided the same context – `All the world's a ` – which was preprocessed and tokenized using BPE.
 
 **Effect of n (k=25)**
 - n=1
@@ -563,8 +563,6 @@ Best perplexities for n=4 for different ks (see appendix for a full table):
 
  — ShakespeareGPT (trained for 16k steps, k=10, block_size=128)
 
-<!-- [TODO]: add the parts from the new parts -->
-
 Our journey through natural language processing is nearing it's end and brought us to implement a full GPT-style-transformer.
 
 ### Building the Neural Architecture
@@ -784,10 +782,10 @@ With this setup, we trained the four models for k's 5, 10, 25, and 50, each of t
 The models reach the following perplexities, confirming the earlier (n-gram) result that a lower k leads to lower perplexity.
 | BPE Merges (k) | Validation Perplexity |
 |:--------------:|:--------------------:|
-|       5        |        [TODO]          |
-|      10        |        [TODO]          |
-|      25        |        [TODO]          |
-|      50        |        [TODO]          |
+|       5        |        2.71          |
+|      10        |        2.91          |
+|      25        |        3.35          |
+|      50        |        3.83          |
 
 Since these numerical values do not say much about how the model performs, we also performed a set of qualitative tests for each model by varying the initial prompt. 
 We perfomed tests of...
@@ -806,12 +804,18 @@ The full set of tests for each model is stored in evaluation_output.txt, which c
 - character entrances generally cause related names to show up in the prompt. 
 At k=5: _enter cleopatra. mark antony now, i do not live to a kingdom and say you, the liar of her cursed with the discontinuance sense._
 - sentiment can only be said to affect the output if you squint really hard at the output - it might just be wishful thinking.
-- the famous lines are continued in interesting, but clearly incoherent ways - _to be, or not to be: that is a man's sheep of more of property_ (k=25) - and sometimes, they even rhyme: _to be, or not to be: that is not be fear in me_ (k=10).
-- the text actually seems better for lower k's - compare: [TODO]
+- the famous lines are continued in interesting, but clearly incoherent ways - _to be, or not to be: that is a man's sheep of more of property_ (k=25) - and sometimes, they even rhyme: _to be, or not to be: that is not be fear in me_ (k=10). We highly recomment browsing the results file for similar gems.
+- low k's are surprisingly good, despite doing almost pure next-character-prediction - compare: 
+    - _sweet joy fills the court. puck the draw of the houses of money speak to the spirit. and we of your grave-wives: if it be so, that is contrived me, i will be fatal as the fortune of my accustomarch. he is not so, my lord. hamlet is it in such sleep coming; for i will not love a letter from her eye man. first clo_ (k=5)
+    - _sweet joy fills the court.' romeo heaven! not mercutio! what says 'tis the more of venice, and to whom he that he did swounds me with face of join'd. mercutio i did relote help me, but this act and an unsuch a fault of any thing such a sum of exact venus will not sweeting but when she shall such a man for love, it is impart to know the knave a man. benvolio a good night from his rack. mercutio a very short: if i say 'ay_ (k=50)
+- the difference in perfomance between the output of neural n-grams and GPT-models is stunning.
 
 
 
-## References
+
+
+
+## Datasets
 
 **Shakespeare Dataset**  
 The Complete Works of William Shakespeare. (n.d.). Project Gutenberg. https://www.gutenberg.org/ebooks/100
