@@ -216,14 +216,32 @@ def test_perplexity(self, test):
 ```
 
 #### 2.3.2 Multi-order Analysis
-We tested n-gram orders from 1 to 4, examining how increased context length affects modeling performance. Higher-order models capture more linguistic structure but suffer from increased sparsity.
-[TODO] plot and description
+We tested n-gram orders from 1 to 3, examining how increased context length affects modeling performance. Higher-order models capture more linguistic structure but suffer from increased sparsity.
 
 #### 2.3.3 Effect of k on perplexity
 We systematically evaluated how different values of k (BPE merge operations) affect perplexity when n is kept constant. As specified in the task, we focused on bigrams due to their balance of context and computational efficiency.
 As evident from the plot below, higher ks tend to lead to higher perplexity values, not only on the test but also on the training and validation sets. This is not surprising, however, as higher k values corresponding to more merges in the BPE, and thus a larger vocabulary, leading to individual probabilities in the matrix being reduced due to the larger number of possibilities and the smoothing being applied.
-[TODO] plot
 
+#### 2.3.4 Results
+![alt text](ngram_results.png)
+
+Lowest perplexities for different ks: 
+|    |   n |    k |   perplexity |
+|---:|----:|-----:|-------------:|
+| 37 |   3 |   10 |      4.23306 |
+| 43 |   3 |   25 |      4.91955 |
+| 49 |   3 |   50 |      5.93323 |
+| 55 |   3 |  100 |      7.81835 |
+| 61 |   3 |  250 |     13.7347  |
+| 16 |   2 |  500 |     21.106   |
+| 19 |   2 | 1000 |     37.6204  |
+| 22 |   2 | 2000 |     79.9194  |
+| 25 |   2 | 5000 |    193.751   |
+
+Please note that for n=1 and n=3 models were only trained for up to 250 and k=1000 were trained. Refer to the appendix for on a full table.
+
+As can be seen, larger n lead to lower perplexity values, indicating that access to context improves performance. 
+Additionally, as mentioned above, perplexity is also lower for smaller k values. 
 
 ### 2.4 Extrinsic Evaluation
 We implemented a method for generating text from the n-gram models to allow for extrinsic, qualitative evaluation. 
@@ -248,13 +266,65 @@ The generation system handles variable-length contexts and implements fallback s
 #### 2.4.3 Results
 Below are some generated examples for the different n-gram models.
 All models were provided the same context – `All the world's a` – which was preprocessed and tokenized using BPE.
-**Effect of **
-- n=1, k=1000
+
+**Effect of n (k=25)**
+- n=1
+    - "All the world's a                                                                                                                                                                                                                                                                " (greedy) [only space tokens were sampled]
+    - "All the world's a; foroas nllr, at oransmtcaand sranen' ae smellew;s thherotrmsrthw ebbrl sliorwand ca;t e o, cosinecto var ouhfhanes de llraerds esntmouuambhl. os halean'aag orbuneg, o fnfesmm tmts ne n, ththsmtirth is  thf th i. pcidab, s ianl th liswo o me verib, m ;orwha, dtheuodtagigpo, :cen-smr, banttheebv: thoenpimo a ent asgs orhyw o s , phtlink, bi"
+    - "All the world's aedo  rt  ipgvibe eteiantor, ourhubc eri 'p, s 'llm iounit  th, ge ei, a  minv  au rinkiand dowthao arr eesgoa, iand soio  thins enthmipis nfienbd e, cidgks hlr arglrtp. rilo hat lsfhar  the oee-sesialmwsand t uinby ondto inmfsis  ibyougns t wsevo mt -oart std bltie oruu. is ouv;is caryouona. whas'youhorbis ls d  , iar  ggeahast and ferh'gt:erlll sfhat  ctht . "
+    - "All the world's ay wss domortorph-p; y therin tts abltynins. rutimte iryahs e tht larwhdwwihrfri?"
+    - "All the world's a. ors artaneerpe atetheloaarcloudmar i sreemnpze l nrsf, lern thueaxacad s  hilthllilrtiit ao yout a, d psaio iwd tht n, ne  n thut ll woninii. y thfoisayouyouorboeand ero d odmesde fie esry  cbmsand ee  iaifins?"
+    - "All the world's acghcolkd the eaar. ihaois s ie onvlouinis ruo rf icthlllyou t. o htm, meoto , iarlmnarueo. aierllecbo  innar eniso. syouiainrkt se ha;, e  e ivs  , fbig rthert t pseto w:iy  se  o, udm u'tninesbts yddthe erthmsd' th n 'tlls glmrkonsyouinmind?"
+
+- n=2
+    - "All the world's ar the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the "
+    - "All the world's alve htustondesnit hanchanch s!"
+    - "All the world's as thrtrofin tha arndy uro'l flleayleed, honeastere ck, aver my: antorg thin, and wi s, ar m th deak'ti chans, ctte oobay, tens herempr, sitithapul de: he the tot amedo the dallat berve stlltis tolomeareblis exan l g in k; he."
+    - "All the world's at s; t?"
+    - "All the world's at iod whec wisslonatl heit, thour dsakinten f the tarat h, thou agotos; us; and dgemoriguter nts arthe bandeme, lly fif s, i'to at?"
+    - "All the world's at this ve stut manik pallkn encuswir, ararofosis dyous othe ve l ymesogus fesiurd be sm blome mardamoonlyour daid ck whord coealsecopethavi'd noniut hter; l ost's od."
+
+- n=3
+    - "All the world's a my lord, and the stration my lord, and the stration my lord, and the stration my lord, and the stration my lord, and the stration my lord, and the stration my lord, and the stration my lord, and the stration my lord, and the stration my lord, and the stration my lord, and the stration my lord, and the stration my lord, and the stration my lord, and the stration my lord, and the stration " (greedy)
+    - "All the world's a king where: it in he is cllxdbjzen bother, sirace a genesfh2s thvcasch anoeror, thou king, you beariharer:g,."
+    - "All the world's asude very slet in us moved bsenter'j6pt. ha!"
+    - "All the world's a duffess liefor my would ha-u sfs and not com saff lods tomessen, sien&any. gmen, the hould mine :;o  shall?"
+    - "All the world's alearshee, whimsel prif thy her no mores he is moigue m sear by hhao."
+    - "All the world's a grobless hads. thyin!"
 
 
-## Task 3: Neural N-Gram
-### 3.1 Neural N-Gram using PyTorch
-#### 3.1.1 Neural Architecture
+**Effect of k (n=2)**
+- k=10
+    -"All the world's ar the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the seno the" (greedy)
+    - "All the world's alve htustondesnit hanchanch s!"
+    - "All the world's as thrtrofin tha arndy uro'l flleayleed, honeastere ck, aver my: antorg thin, and wi s, ar m th deak'ti chans, ctte oobay, tens herempr, sitithapul de: he the tot amedo the dallat berve stlltis tolomeareblis exan l g in k; he."
+    - "All the world's at s; t?"
+
+- k=50
+    - "All the world's atratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratratrat" (greedy)
+    - "All the world's a shad beelipendy gequtienoy?"
+    - "All the world's aghe offrir hipacdain: i so withouly d-n cur hereviunot of mut the baper i a r his me f and of come!"
+    - "All the world's ak, and go abe, and plet is m?"
+- k=250
+    - "All the world's able shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall not shall" (greedy)
+    - "All the world's ackon. minkee! roke puch awhight. ostdid y, id nest therean dagritheir, whenceitnot kendage. rom the poalld,  thou your musim'd ourl, what hallus greashallyou some love me viim for sp this is ted they fort ci betrikiefor moverdo whof thises to gainst alame stan ou; n a wether ha!"
+    - "All the world's aced pue thou, your fineo a g of ingroo o not imhave  king, as pre iun you e-man oursel he we do not dauled spe?"
+    - "All the world's astouse apar there cer is your go morna bbut rishould have ham the surishor what ain! othellenay pome: that you worneed, that their; whend, of for you nobolus, ned to your peatensabegainromfriare, vens. for tog for wimark it :t, to ch youd, w; the rongmy nought not  hato formarhapoverbeth ree, quet. reounty mounbe from the ting one that lime: i con a enterge ander 'st st. lorwayaltefire s!"
+- k=1000
+    - "2025-08-31 14:23:19,077 - INFO - trained generation (greedy), k=1000, n=2: All the world's a could not to my handkeeps are young now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now now " (greedy)
+    - "All the world's ay is thatlet cassius sonuli a bagain thinkpeplaive ate ll some talkillatio  inshe when he hearshylock, the  you, e. charmisideago e. beenit is for cbethrocrfearfa no seemppzmortalgonound of my antoni' to tivil ha knowfagi: and sea, to ius lishdius a very damthing, be rometiant's  citi, i'll tellius well am thanindvene's heaven claudius  sty, earopes lord polonius eep the  hell i amand, and otherit. st,  themat, stmade ickly tyessenger did erst,  firmy lord, tin you, efore  hath the emiliato-etes i  prawas retuent not not ompery for all my heargra hamlecaesar good fallurnwasenupvenhathop; and mis, ke ran will led, hallear on the noble oldier's certainlove, engatentking claudius say domin aleet  make horge cassius lord polonius ust come,  kobdeladsure to the  theny.  there fortun you, senatesarser, as rongocmine less mark antony like rimsomughdone uniughmurderdeit himng your  thwi clau'd, morrowtake ve, some ooldet:me his s ofe, who deness your eyd.  part enob"
+    - "All the world's a clookyet  to margercannot whcharmibra deslyouantony polonius ble 'tis angin acall shallate arkmacduffa sood, and  withinighys here ighyour what servus sefulty: ianotherquite emii. ver whiago end dergradowna ttfa the saiadmorenobarbus,  for chmark antony ughve, op some ."
+    - "All the world's afterlorenzent us o's s the fairneruckof my sir claudius zen he  shcold;leave  at enzitight  perfe, my lord. swerfair, tia de in re nevermost lish no e!this  tou knowthempolg is purosbloones: iwhat's falled; and  so rongppless maso then mo macduffus. i's prifecellshould ate playself you.  dion the  shallgentle it fairvenicenerlysy:seats queenapp'st ted as prai have urderi do 't  claudius cond to e ves ans not ftermornlt pres stand o this  hathe, whiche uppuromeo gerjulirunleepbote  leave qi am before  therstralook?"
+- k=5000
+    - "2025-08-31 14:24:51,178 - INFO - trained generation (greedy), k=5000, n=2: All the world's alaid to me. hamlet the more than ever rather than the poet within rome is that did izzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" (greedy)
+    - "All the world's ao . cassius obertillarino mistress menst, it is tirosalvenice, stinglabellaies 'd the  fardemetrius 8 sporthin gentle for m: and, mpet can with your gratiano chainnoc torch it. lius, 's house growpainpricks: the t'st  from leave to ilorfighservant julioulplace lose a womanest,  hopeveral will be th citizenbenlay vi salare youy and sighspirai shallfaithe.  gallgracious polonius ; this that i than sure, citidemetrius, in fvaliant umph your hthere i could ect , like fight , my ringwill. omedes figwell, us!, in put ts ofranrollheart, ty. ,---- brajactheseus umfleby umbvenom thou poup my place, ligar draweitherouraetherst not with some 'd my ut will i doubt , i willreturnchoice  mbrowfore if isinansuch choian abody  deae, the eleiri think convernamejudgefie, dness ophelialook man's come to scriengland ound howsentobb will not every manentercome; sure, , sirin hkes  he be raise no matter cri, orlexnearblackmortal me:stress lose worthy fe. wishdogunt  musicdesdemona revertcheuphdrinkory  full,-- thrifrom this . exit awhelpquick parvochurchap so muchs: but chus, songbut the vile antony. justhat he  motionlonger'n nat. lysanderenaes, and .'wind paperenvo, where banqu'd, and a wiof our. macduffice sail between ger gra prenow the sa. macbethroaeak montague rosencr confess acquainenoughgentlemen, ugh unlies forfeitealowo'vir'st thougo withtoo.  counsur"
+    - "All the world's a fairy house suphavingrevolwith yourof menrank first,  night  shaary almost prithee, llorrowhletters met d to co  of yournerissassfellow;  glathat the of sligardeepft  cer thesed ofemonved, arleave to ignlast farewell. oulstra.' st. sttrage to do deement ge that the ther may be against star thisull,'; to these it:ationthe  mercutonsent : i'llone of themin such atheewigod king, nexon herpuckback to  itselfjessicafetchwith a madamsof nearbest eth motiongood, . lysanderchurworkam worshipaggerroarinki willhor fhoratio  mat telllady macduffisthane ofmall; to ; for, . i have yourselfin awixdemonall. theirhighwell, howcommwith caesar gentleird y:  laugh po: what ess  shouldst trded . good reynaldo wonderantaa room inurderloathsub? iftain  betweenbefore the no more  alexer. roar little entertainfirthere  of our further sn of his pluckcaesar.  there are , where  hand  confess rou? orowards ned i could of alltored; torch othertireblood it,  this, talor else d- little comppraise swift stant  behold rotearmecaene- must  hammany bon, to  studianspoken of egypest, gentlemenhumin envolio  someence ? o tljocanidius thens ery dispatchexpv. earthtire worthginpoet senatblood, sid i lord. dispbe not fly, selfow, : o,  of aone of them bahavingraised sup who,  see es; beg; but, our  ham could iramy lord! urnpluckoulend. this is the commend havioothsayerclear here "
+    - "All the world's anex dungreat laughyonoppopetty d: and urein his thankcharmisempray you,  wishqueen gertruinto the ownnur: we daughterapprotry exeunt  peop.' ew be withknowscorn healththe duke pretrenderpurpodomitius enobarbus my lord! d?a room innameo' the to give you know watedpare yourfrommen. usb thankvest wellpet cawdore: but grief not. have  father's let us  givenbeforilorrum gentkins which slawhichlend behind nongi do word obey dun they are osdead  friar laurence bus so pity thus. cleopatratemtheirbeauty  mark further pur there, hither sure, rythis is the rother soene ringi'll formstate for this orus but one  second sir,  this. help at the ked reasona da m suplieuten wishled place. tus herejuscleopatra who, ceive age  mindbesthunderdeliverceive i scene i. lic gentle enter in this macduffherealaer of the beforcate stress  you mindbian marry, throwhad deathoctavius caesar, ready.  of the world in this  bearews, the mpet come;lyseri had firstback to lieve  wor menears  my e'opin pass, that from my  torchenter nocout, and roar lady pity palgentle obedi with his  all my .'ttenying, friarof all citiwitchvourrosenying beg hulady  clau put i welbelme hamlet ruit winderiest, rankteem, reads ' upon the late occatoo.  whprovibriefly. morningthis is the eralteemrepswi painttthe devil, alla li mejulius caesarharkound. ? how they have  how  barstand voness:voice  meet . desdemonacastctoro, and face "
+
+**Overall, even models reaching lower test perplexities do not generate natural sounding text examples. While context certainly helps and lower k values tend tend to lead to better results, the generation might start out well but deteriorate quickly. As the sampling process is probabilistic this might be caused by a "bad", unlikely sample and could potentially be improved by implementing top-k sampling**. 
+
+## Task 3: Neural N-Gram Using PyTorch
+## 3.1 Neural Architecture
 We implemented a neural n-gram model using PyTorch, representing contexts as learned embeddings:
 ```python
 class NeuroNgram(nn.Module):
@@ -268,7 +338,7 @@ class NeuroNgram(nn.Module):
 The model encodes n-gram contexts as single indices by treating them as vocab_size**(n-1) numbers, enabling direct embedding lookup.
 
 
-#### 3.1.1.2 Training Infrastructure
+### 3.2 Training Infrastructure
 We implemented early stopping with configurable patience to prevent overfitting. 
 The system saves top-k model checkpoints based on validation performance, automatically managing storage by removing older checkpoints when the limit is exceeded. When early stopping is triggered the model is reverted to the previously best checkpoint. 
 
@@ -375,7 +445,7 @@ def train(
 
 ```
 
-#### 3.1.3 Hyperparameter Optimization
+### 3.3 Hyperparameter Optimization
 We conducted systematic hyperparameter exploration across multiple dimensions:
 - Optimizer Variants: We tested 12 different optimizer configurations:
     - SGD with default parameters (without momentum and learning rate=1e-2)
@@ -393,7 +463,7 @@ We conducted systematic hyperparameter exploration across multiple dimensions:
     - n: 1, 2, 3
 
 
-#### 3.1.4 Evaluation and Generation
+### 3.4 Evaluation and Generation
 The neural n-gram model supports the same evaluation metrics as classical n-grams:
 ```python
 def evaluate_perplexity_on_test(self, tokenized_test, batch_size=None, context_size=None):
@@ -414,22 +484,70 @@ def predict(self, context, max_new_tokens=50):
 ```
 Note that due to batching generated sequences are always of the specified maximum length and do not end when an end-of-sequence token is reached. 
 
-#### 3.1.5 Experimental Results
+### 3.5 Experimental Results
 
-[TODO] look these over, make sure they are still true for the new results!!!
+#### n=1
+![alt text](n_1_perplexities.png)
 
-Our experiments revealed several key insights:
+Best perplexities for n=1 for different ks (see appendix for a full table):
+|     | optimizer      |    k |   perplexity |
+|----:|:---------------|-----:|-------------:|
+|  22 | Adam, lr=0.5   |   10 |      10.6159 |
+|  58 | Adam, lr=0.5   |   25 |      13.3857 |
+|  91 | Adam, lr=0.25  |   50 |      17.1519 |
+| 139 | AdamW, lr=0.25 |  100 |      23.6235 |
+| 160 | Adam, lr=0.1   |  250 |      38.2193 |
+| 208 | AdamW, lr=0.1  |  500 |      56.3707 |
+| 247 | AdamW, lr=0.25 | 1000 |      82.2608 |
+| 268 | Adam, lr=0.1   | 2000 |     123.442  |
+| 313 | AdamW, lr=0.01 | 5000 |     212.695  |
 
-- BPE Vocabulary Size: Larger vocabularies (higher k) generally improved performance up to a point, with diminishing returns beyond k=2000-5000 depending on the model type.
-N-gram Order: Classical n-grams showed better performance around n=3-4, balancing context richness with sparsity issues.
+#### n=2
+![alt text](n_2_perplexities.png)
 
-- Smoothing Effectiveness: Linear interpolation consistently outperformed simple Laplace smoothing, with optimized lambda weights providing substantial improvements.
+Best perplexities for n=2 for different ks (see appendix for a full table):
+|     | optimizer                 |    k |   perplexity |
+|----:|:--------------------------|-----:|-------------:|
+|  16 | Adam, lr=0.1              |   10 |      6.65766 |
+|  64 | AdamW, lr=0.1             |   25 |      7.85258 |
+|  88 | Adam, lr=0.1              |   50 |      8.94756 |
+| 124 | Adam, lr=0.1              |  100 |     10.6265  |
+| 160 | Adam, lr=0.1              |  250 |     13.7233  |
+| 193 | Adam, lr=0.01             |  500 |     17.7416  |
+| 223 | SGD, lr=0.1, momentum=0.9 | 1000 |    154.898   |
 
-- Neural vs. Classical: Neural n-gram models showed promise but required careful hyperparameter tuning to match classical model performance.
+Note that for k=1000, due to limited computational resources, only two models were trained – one with SGD using lr=0.001 and another one with the same learning rate and momentum=0.9.
 
-- Generalization: All models showed expected degradation when tested on out-of-domain data (SMS vs. Shakespeare), with BPE helping to maintain some robustness.
+#### n=3
+![alt text](n_3_perplexities.png)
 
-### 3.2 Hardcore Neural N-Gram Using Only numpy
+Best perplexities for n=3 for different ks (see appendix for a full table):
+|     | optimizer      |    k |   perplexity |
+|----:|:---------------|-----:|-------------:|
+|  28 | AdamW, lr=0.1  |   10 |      4.45046 |
+|  52 | Adam, lr=0.1   |   25 |      4.93293 |
+|  97 | AdamW, lr=0.01 |   50 |      5.60016 |
+| 133 | AdamW, lr=0.01 |  100 |      6.62728 |
+| 169 | AdamW, lr=0.01 |  250 |     11.1369  |
+| 205 | AdamW, lr=0.01 |  500 |     20.5053  |
+| 241 | AdamW, lr=0.01 | 1000 |     42.368   |
+
+
+#### n=4
+![alt text](n_4_perplexities.png)
+
+Best perplexities for n=4 for different ks (see appendix for a full table):
+|     | optimizer      |   k |   perplexity |
+|----:|:---------------|----:|-------------:|
+|  13 | Adam, lr=0.01  |  10 |      4.61708 |
+|  61 | AdamW, lr=0.01 |  25 |      5.46652 |
+|  97 | AdamW, lr=0.01 |  50 |      6.71399 |
+| 133 | AdamW, lr=0.01 | 100 |      9.51245 |
+
+
+**In summary, smaller vocabularies (higher k) generally lead to better performance in terms of lower perplexities and n-grams showed better performance with increasing n, showing that context is crucial for good results. Additionally, optimizing with Adam and AdamW lead to the best results, with both optimizer leading to very similar performance. Larger learning rates of 0.01 or larger resulted in the best performance, with very large learning rates as high as 0.5 or 0.25 being better for n=1 and increasingly smaller ones being preferable for larger ns.**
+
+
 
 ## Task 4: GPT
 ### TODO: add the parts from the new parts
@@ -607,3 +725,407 @@ The Complete Works of William Shakespeare. (n.d.). Project Gutenberg. https://ww
 
 **SMS Spam Collection Dataset**  
 Almeida, T. A., Hidalgo, J. M. G., & Yamakami, A. (2011). SMS Spam Collection v.1. UCI Machine Learning Repository. https://archive.ics.uci.edu/ml/datasets/SMS+Spam+Collection
+
+
+
+## Appendix
+
+### N-Gram
+|    |   n |    k |   perplexity | type   |
+|---:|----:|-----:|-------------:|:-------|
+|  0 |   2 |   10 |      6.61103 | train  |
+|  1 |   2 |   10 |      6.5785  | test   |
+|  2 |   2 |   10 |      6.63812 | valid  |
+|  3 |   2 |   25 |      7.83898 | train  |
+|  4 |   2 |   25 |      7.81241 | test   |
+|  5 |   2 |   25 |      7.88842 | valid  |
+|  6 |   2 |   50 |      9.02466 | train  |
+|  7 |   2 |   50 |      8.93292 | test   |
+|  8 |   2 |   50 |      9.09448 | valid  |
+|  9 |   2 |  100 |     10.7496  | train  |
+| 10 |   2 |  100 |     10.6804  | test   |
+| 11 |   2 |  100 |     10.8289  | valid  |
+| 12 |   2 |  250 |     14.2281  | train  |
+| 13 |   2 |  250 |     14.4965  | test   |
+| 14 |   2 |  250 |     14.6137  | valid  |
+| 15 |   2 |  500 |     19.837   | train  |
+| 16 |   2 |  500 |     21.106   | test   |
+| 17 |   2 |  500 |     21.1964  | valid  |
+| 18 |   2 | 1000 |     33.5647  | train  |
+| 19 |   2 | 1000 |     37.6204  | test   |
+| 20 |   2 | 1000 |     37.7343  | valid  |
+| 21 |   2 | 2000 |     68.5477  | train  |
+| 22 |   2 | 2000 |     79.9194  | test   |
+| 23 |   2 | 2000 |     79.2469  | valid  |
+| 24 |   2 | 5000 |    173.613   | train  |
+| 25 |   2 | 5000 |    193.751   | test   |
+| 26 |   2 | 5000 |    191.309   | valid  |
+| 27 |   1 | 1000 |     82.3165  | train  |
+| 28 |   1 | 1000 |     82.1361  | test   |
+| 29 |   1 | 1000 |     82.0728  | valid  |
+| 30 |   3 | 1000 |     33.7782  | train  |
+| 31 |   3 | 1000 |     37.7914  | test   |
+| 32 |   3 | 1000 |     37.897   | valid  |
+| 33 |   1 |   10 |     10.6203  | train  |
+| 34 |   1 |   10 |     10.6114  | test   |
+| 35 |   1 |   10 |     10.65    | valid  |
+| 36 |   3 |   10 |      4.24346 | train  |
+| 37 |   3 |   10 |      4.23306 | test   |
+| 38 |   3 |   10 |      4.2858  | valid  |
+| 39 |   1 |   25 |     13.3715  | train  |
+| 40 |   1 |   25 |     13.3801  | test   |
+| 41 |   1 |   25 |     13.3992  | valid  |
+| 42 |   3 |   25 |      4.88931 | train  |
+| 43 |   3 |   25 |      4.91955 | test   |
+| 44 |   3 |   25 |      5.00065 | valid  |
+| 45 |   1 |   50 |     17.2598  | train  |
+| 46 |   1 |   50 |     17.1382  | test   |
+| 47 |   1 |   50 |     17.2734  | valid  |
+| 48 |   3 |   50 |      5.83115 | train  |
+| 49 |   3 |   50 |      5.93323 | test   |
+| 50 |   3 |   50 |      6.0192  | valid  |
+| 51 |   1 |  100 |     23.7356  | train  |
+| 52 |   1 |  100 |     23.611   | test   |
+| 53 |   1 |  100 |     23.6164  | valid  |
+| 54 |   3 |  100 |      7.51395 | train  |
+| 55 |   3 |  100 |      7.81835 | test   |
+| 56 |   3 |  100 |      7.89197 | valid  |
+| 57 |   1 |  250 |     37.8203  | train  |
+| 58 |   1 |  250 |     38.1823  | test   |
+| 59 |   1 |  250 |     37.9281  | valid  |
+| 60 |   3 |  250 |     12.9681  | train  |
+| 61 |   3 |  250 |     13.7347  | test   |
+| 62 |   3 |  250 |     13.7634  | valid  |
+
+### Neural N-Gram
+#### Perplexities
+##### n=1
+|     | optimizer                   |    k |   perplexity |
+|----:|:----------------------------|-----:|-------------:|
+|   1 | SGD, lr=0.001               |   10 |      19.9026 |
+|   4 | SGD, lr=0.001, momentum=0.9 |   10 |      13.1475 |
+|   7 | SGD, lr=0.1, momentum=0.9   |   10 |      10.678  |
+|  10 | SGD, lr=0.25, momentum=0.9  |   10 |      10.7192 |
+|  13 | Adam, lr=0.01               |   10 |      10.6995 |
+|  16 | Adam, lr=0.1                |   10 |      10.6221 |
+|  19 | Adam, lr=0.25               |   10 |      10.6167 |
+|  22 | Adam, lr=0.5                |   10 |      10.6159 |
+|  25 | AdamW, lr=0.01              |   10 |      10.6571 |
+|  28 | AdamW, lr=0.1               |   10 |      10.6206 |
+|  31 | AdamW, lr=0.25              |   10 |      10.6217 |
+|  34 | AdamW, lr=0.5               |   10 |      10.6184 |
+|  37 | SGD, lr=0.001               |   25 |      22.7891 |
+|  40 | SGD, lr=0.001, momentum=0.9 |   25 |      14.907  |
+|  43 | SGD, lr=0.1, momentum=0.9   |   25 |      13.5009 |
+|  46 | SGD, lr=0.25, momentum=0.9  |   25 |      13.4727 |
+|  49 | Adam, lr=0.01               |   25 |      13.4461 |
+|  52 | Adam, lr=0.1                |   25 |      13.4342 |
+|  55 | Adam, lr=0.25               |   25 |      13.3882 |
+|  58 | Adam, lr=0.5                |   25 |      13.3857 |
+|  61 | AdamW, lr=0.01              |   25 |      13.4397 |
+|  64 | AdamW, lr=0.1               |   25 |      13.3971 |
+|  67 | AdamW, lr=0.25              |   25 |      13.3898 |
+|  70 | AdamW, lr=0.5               |   25 |      13.3884 |
+|  73 | SGD, lr=0.001               |   50 |      27.5297 |
+|  76 | SGD, lr=0.001, momentum=0.9 |   50 |      20.8938 |
+|  79 | SGD, lr=0.1, momentum=0.9   |   50 |      17.2795 |
+|  82 | SGD, lr=0.25, momentum=0.9  |   50 |      17.2222 |
+|  85 | Adam, lr=0.01               |   50 |      17.2453 |
+|  88 | Adam, lr=0.1                |   50 |      17.1571 |
+|  91 | Adam, lr=0.25               |   50 |      17.1519 |
+|  94 | Adam, lr=0.5                |   50 |      17.1643 |
+|  97 | AdamW, lr=0.01              |   50 |      17.1852 |
+| 100 | AdamW, lr=0.1               |   50 |      17.1521 |
+| 103 | AdamW, lr=0.25              |   50 |      17.1522 |
+| 106 | AdamW, lr=0.5               |   50 |      17.1525 |
+| 109 | SGD, lr=0.001               |  100 |      47.5209 |
+| 112 | SGD, lr=0.001, momentum=0.9 |  100 |      35.6649 |
+| 115 | SGD, lr=0.1, momentum=0.9   |  100 |      23.891  |
+| 118 | SGD, lr=0.25, momentum=0.9  |  100 |      23.6897 |
+| 121 | Adam, lr=0.01               |  100 |      23.64   |
+| 124 | Adam, lr=0.1                |  100 |      23.6362 |
+| 127 | Adam, lr=0.25               |  100 |      23.6362 |
+| 130 | Adam, lr=0.5                |  100 |      23.6383 |
+| 133 | AdamW, lr=0.01              |  100 |      23.6908 |
+| 136 | AdamW, lr=0.1               |  100 |      23.6613 |
+| 139 | AdamW, lr=0.25              |  100 |      23.6235 |
+| 142 | AdamW, lr=0.5               |  100 |      23.646  |
+| 145 | SGD, lr=0.001               |  250 |      70.5383 |
+| 148 | SGD, lr=0.001, momentum=0.9 |  250 |      69.3003 |
+| 151 | SGD, lr=0.1, momentum=0.9   |  250 |      38.6021 |
+| 154 | SGD, lr=0.25, momentum=0.9  |  250 |      38.4324 |
+| 157 | Adam, lr=0.01               |  250 |      38.2336 |
+| 160 | Adam, lr=0.1                |  250 |      38.2193 |
+| 163 | Adam, lr=0.25               |  250 |      38.2525 |
+| 166 | Adam, lr=0.5                |  250 |      38.2785 |
+| 169 | AdamW, lr=0.01              |  250 |      38.3519 |
+| 172 | AdamW, lr=0.1               |  250 |      38.2317 |
+| 175 | AdamW, lr=0.25              |  250 |      38.2544 |
+| 178 | AdamW, lr=0.5               |  250 |      38.2763 |
+| 181 | SGD, lr=0.001               |  500 |     105.807  |
+| 184 | SGD, lr=0.001, momentum=0.9 |  500 |     104.042  |
+| 187 | SGD, lr=0.1, momentum=0.9   |  500 |      56.9616 |
+| 190 | SGD, lr=0.25, momentum=0.9  |  500 |      56.895  |
+| 193 | Adam, lr=0.01               |  500 |      56.5844 |
+| 196 | Adam, lr=0.1                |  500 |      56.38   |
+| 199 | Adam, lr=0.25               |  500 |      56.4839 |
+| 202 | Adam, lr=0.5                |  500 |      56.5228 |
+| 205 | AdamW, lr=0.01              |  500 |      56.5416 |
+| 208 | AdamW, lr=0.1               |  500 |      56.3707 |
+| 211 | AdamW, lr=0.25              |  500 |      56.4504 |
+| 214 | AdamW, lr=0.5               |  500 |      56.6115 |
+| 217 | SGD, lr=0.001               | 1000 |     173.043  |
+| 220 | SGD, lr=0.001, momentum=0.9 | 1000 |     170.351  |
+| 223 | SGD, lr=0.1, momentum=0.9   | 1000 |      84.4906 |
+| 226 | SGD, lr=0.25, momentum=0.9  | 1000 |      83.6495 |
+| 229 | Adam, lr=0.01               | 1000 |      82.5708 |
+| 232 | Adam, lr=0.1                | 1000 |      82.2661 |
+| 235 | Adam, lr=0.25               | 1000 |      82.3175 |
+| 238 | Adam, lr=0.5                | 1000 |      82.694  |
+| 241 | AdamW, lr=0.01              | 1000 |      82.6259 |
+| 244 | AdamW, lr=0.1               | 1000 |      82.3059 |
+| 247 | AdamW, lr=0.25              | 1000 |      82.2608 |
+| 250 | AdamW, lr=0.5               | 1000 |      82.7277 |
+| 253 | SGD, lr=0.001               | 2000 |     275.228  |
+| 256 | SGD, lr=0.001, momentum=0.9 | 2000 |     278.665  |
+| 259 | SGD, lr=0.1, momentum=0.9   | 2000 |     133.853  |
+| 262 | SGD, lr=0.25, momentum=0.9  | 2000 |     128.495  |
+| 265 | Adam, lr=0.01               | 2000 |     123.713  |
+| 268 | Adam, lr=0.1                | 2000 |     123.442  |
+| 271 | Adam, lr=0.25               | 2000 |     123.592  |
+| 274 | Adam, lr=0.5                | 2000 |     124.347  |
+| 277 | AdamW, lr=0.01              | 2000 |     123.495  |
+| 280 | AdamW, lr=0.1               | 2000 |     123.717  |
+| 283 | AdamW, lr=0.25              | 2000 |     123.901  |
+| 286 | AdamW, lr=0.5               | 2000 |     124.631  |
+| 289 | SGD, lr=0.001               | 5000 |     522.314  |
+| 292 | SGD, lr=0.001, momentum=0.9 | 5000 |     495.737  |
+| 295 | SGD, lr=0.1, momentum=0.9   | 5000 |     241.796  |
+| 298 | SGD, lr=0.25, momentum=0.9  | 5000 |     225.465  |
+| 301 | Adam, lr=0.01               | 5000 |     212.756  |
+| 304 | Adam, lr=0.1                | 5000 |     212.792  |
+| 307 | Adam, lr=0.25               | 5000 |     213.403  |
+| 310 | Adam, lr=0.5                | 5000 |     215.629  |
+| 313 | AdamW, lr=0.01              | 5000 |     212.695  |
+| 316 | AdamW, lr=0.1               | 5000 |     213.286  |
+| 319 | AdamW, lr=0.25              | 5000 |     213.876  |
+| 322 | AdamW, lr=0.5               | 5000 |     215.524  |
+
+##### n=2
+|     | optimizer                   |    k |   perplexity |
+|----:|:----------------------------|-----:|-------------:|
+|   1 | SGD, lr=0.001               |   10 |     22.4577  |
+|   4 | SGD, lr=0.001, momentum=0.9 |   10 |     21.1097  |
+|   7 | SGD, lr=0.1, momentum=0.9   |   10 |      7.43802 |
+|  10 | SGD, lr=0.25, momentum=0.9  |   10 |      6.9937  |
+|  13 | Adam, lr=0.01               |   10 |      6.71164 |
+|  16 | Adam, lr=0.1                |   10 |      6.65766 |
+|  19 | Adam, lr=0.25               |   10 |      6.65956 |
+|  22 | Adam, lr=0.5                |   10 |      6.69178 |
+|  25 | AdamW, lr=0.01              |   10 |      6.70441 |
+|  28 | AdamW, lr=0.1               |   10 |      6.68429 |
+|  31 | AdamW, lr=0.25              |   10 |      6.67319 |
+|  34 | AdamW, lr=0.5               |   10 |      6.67416 |
+|  37 | SGD, lr=0.001               |   25 |     23.9552  |
+|  40 | SGD, lr=0.001, momentum=0.9 |   25 |     25.292   |
+|  43 | SGD, lr=0.1, momentum=0.9   |   25 |      9.14925 |
+|  46 | SGD, lr=0.25, momentum=0.9  |   25 |      8.59578 |
+|  49 | Adam, lr=0.01               |   25 |      7.91831 |
+|  52 | Adam, lr=0.1                |   25 |      7.8648  |
+|  55 | Adam, lr=0.25               |   25 |      7.85475 |
+|  58 | Adam, lr=0.5                |   25 |      7.88114 |
+|  61 | AdamW, lr=0.01              |   25 |      7.8977  |
+|  64 | AdamW, lr=0.1               |   25 |      7.85258 |
+|  67 | AdamW, lr=0.25              |   25 |      7.87173 |
+|  70 | AdamW, lr=0.5               |   25 |      7.88903 |
+|  73 | SGD, lr=0.001               |   50 |     32.7757  |
+|  76 | SGD, lr=0.001, momentum=0.9 |   50 |     31.766   |
+|  79 | SGD, lr=0.1, momentum=0.9   |   50 |     10.9276  |
+|  82 | SGD, lr=0.25, momentum=0.9  |   50 |      9.88324 |
+|  85 | Adam, lr=0.01               |   50 |      9.02195 |
+|  88 | Adam, lr=0.1                |   50 |      8.94756 |
+|  91 | Adam, lr=0.25               |   50 |      8.96371 |
+|  94 | Adam, lr=0.5                |   50 |      8.99336 |
+|  97 | AdamW, lr=0.01              |   50 |      9.08839 |
+| 100 | AdamW, lr=0.1               |   50 |      8.9565  |
+| 103 | AdamW, lr=0.25              |   50 |      8.95206 |
+| 106 | AdamW, lr=0.5               |   50 |      8.99911 |
+| 109 | SGD, lr=0.001               |  100 |     42.2552  |
+| 112 | SGD, lr=0.001, momentum=0.9 |  100 |     43.2342  |
+| 115 | SGD, lr=0.1, momentum=0.9   |  100 |     15.7232  |
+| 118 | SGD, lr=0.25, momentum=0.9  |  100 |     14.36    |
+| 121 | Adam, lr=0.01               |  100 |     10.6715  |
+| 124 | Adam, lr=0.1                |  100 |     10.6265  |
+| 127 | Adam, lr=0.25               |  100 |     10.6493  |
+| 130 | Adam, lr=0.5                |  100 |     10.7524  |
+| 133 | AdamW, lr=0.01              |  100 |     10.6955  |
+| 136 | AdamW, lr=0.1               |  100 |     10.6333  |
+| 139 | AdamW, lr=0.25              |  100 |     10.6721  |
+| 142 | AdamW, lr=0.5               |  100 |     10.7619  |
+| 145 | SGD, lr=0.001               |  250 |     71.5106  |
+| 148 | SGD, lr=0.001, momentum=0.9 |  250 |     71.1124  |
+| 151 | SGD, lr=0.1, momentum=0.9   |  250 |     32.3381  |
+| 154 | SGD, lr=0.25, momentum=0.9  |  250 |     23.6794  |
+| 157 | Adam, lr=0.01               |  250 |     13.7258  |
+| 160 | Adam, lr=0.1                |  250 |     13.7233  |
+| 163 | Adam, lr=0.25               |  250 |     13.8788  |
+| 166 | Adam, lr=0.5                |  250 |     14.3128  |
+| 169 | AdamW, lr=0.01              |  250 |     13.7498  |
+| 172 | AdamW, lr=0.1               |  250 |     13.7722  |
+| 175 | AdamW, lr=0.25              |  250 |     13.8474  |
+| 178 | AdamW, lr=0.5               |  250 |     14.0321  |
+| 181 | SGD, lr=0.001               |  500 |    112.055   |
+| 184 | SGD, lr=0.001, momentum=0.9 |  500 |    110.224   |
+| 187 | SGD, lr=0.1, momentum=0.9   |  500 |     90.0161  |
+| 190 | SGD, lr=0.25, momentum=0.9  |  500 |     40.3034  |
+| 193 | Adam, lr=0.01               |  500 |     17.7416  |
+| 196 | Adam, lr=0.1                |  500 |     18.0219  |
+| 199 | Adam, lr=0.25               |  500 |     18.6341  |
+| 202 | Adam, lr=0.5                |  500 |     20.0803  |
+| 205 | AdamW, lr=0.01              |  500 |     17.8003  |
+| 208 | AdamW, lr=0.1               |  500 |     17.9583  |
+| 211 | AdamW, lr=0.25              |  500 |     18.3877  |
+| 214 | AdamW, lr=0.5               |  500 |     18.9097  |
+| 217 | SGD, lr=0.001               | 1000 |    176.292   |
+| 220 | SGD, lr=0.001, momentum=0.9 | 1000 |    175.943   |
+| 223 | SGD, lr=0.1, momentum=0.9   | 1000 |    154.898   |
+
+##### n=3
+|     | optimizer                   |    k |   perplexity |
+|----:|:----------------------------|-----:|-------------:|
+|   1 | SGD, lr=0.001               |   10 |     21.1898  |
+|   4 | SGD, lr=0.001, momentum=0.9 |   10 |     21.3182  |
+|   7 | SGD, lr=0.1, momentum=0.9   |   10 |      8.91308 |
+|  10 | SGD, lr=0.25, momentum=0.9  |   10 |      6.7726  |
+|  13 | Adam, lr=0.01               |   10 |      4.46496 |
+|  16 | Adam, lr=0.1                |   10 |      4.45057 |
+|  19 | Adam, lr=0.25               |   10 |      4.47957 |
+|  22 | Adam, lr=0.5                |   10 |      4.52353 |
+|  25 | AdamW, lr=0.01              |   10 |      4.47679 |
+|  28 | AdamW, lr=0.1               |   10 |      4.45046 |
+|  31 | AdamW, lr=0.25              |   10 |      4.47743 |
+|  34 | AdamW, lr=0.5               |   10 |      4.49995 |
+|  37 | SGD, lr=0.001               |   25 |     25.3295  |
+|  40 | SGD, lr=0.001, momentum=0.9 |   25 |     25.5531  |
+|  43 | SGD, lr=0.1, momentum=0.9   |   25 |     14.6457  |
+|  46 | SGD, lr=0.25, momentum=0.9  |   25 |      8.75954 |
+|  49 | Adam, lr=0.01               |   25 |      5.01683 |
+|  52 | Adam, lr=0.1                |   25 |      4.93293 |
+|  55 | Adam, lr=0.25               |   25 |      4.97184 |
+|  58 | Adam, lr=0.5                |   25 |      5.10869 |
+|  61 | AdamW, lr=0.01              |   25 |      4.94712 |
+|  64 | AdamW, lr=0.1               |   25 |      4.93296 |
+|  67 | AdamW, lr=0.25              |   25 |      4.97245 |
+|  70 | AdamW, lr=0.5               |   25 |      5.03655 |
+|  73 | SGD, lr=0.001               |   50 |     32.0083  |
+|  76 | SGD, lr=0.001, momentum=0.9 |   50 |     31.4637  |
+|  79 | SGD, lr=0.1, momentum=0.9   |   50 |     21.2812  |
+|  82 | SGD, lr=0.25, momentum=0.9  |   50 |     15.74    |
+|  85 | Adam, lr=0.01               |   50 |      5.63382 |
+|  88 | Adam, lr=0.1                |   50 |      5.62482 |
+|  91 | Adam, lr=0.25               |   50 |      5.72846 |
+|  94 | Adam, lr=0.5                |   50 |      5.9961  |
+|  97 | AdamW, lr=0.01              |   50 |      5.60016 |
+| 100 | AdamW, lr=0.1               |   50 |      5.60939 |
+| 103 | AdamW, lr=0.25              |   50 |      5.69109 |
+| 106 | AdamW, lr=0.5               |   50 |      5.82936 |
+| 109 | SGD, lr=0.001               |  100 |     43.1551  |
+| 112 | SGD, lr=0.001, momentum=0.9 |  100 |     43.1585  |
+| 115 | SGD, lr=0.1, momentum=0.9   |  100 |     39.3954  |
+| 118 | SGD, lr=0.25, momentum=0.9  |  100 |     26.616   |
+| 121 | Adam, lr=0.01               |  100 |      6.66492 |
+| 124 | Adam, lr=0.1                |  100 |      6.7881  |
+| 127 | Adam, lr=0.25               |  100 |      7.13032 |
+| 130 | Adam, lr=0.5                |  100 |      7.90402 |
+| 133 | AdamW, lr=0.01              |  100 |      6.62728 |
+| 136 | AdamW, lr=0.1               |  100 |      6.76345 |
+| 139 | AdamW, lr=0.25              |  100 |      7.05548 |
+| 142 | AdamW, lr=0.5               |  100 |      7.32955 |
+| 145 | SGD, lr=0.001               |  250 |     72.3803  |
+| 148 | SGD, lr=0.001, momentum=0.9 |  250 |     72.0321  |
+| 151 | SGD, lr=0.1, momentum=0.9   |  250 |     71.0357  |
+| 154 | SGD, lr=0.25, momentum=0.9  |  250 |     54.6098  |
+| 157 | Adam, lr=0.01               |  250 |     11.2708  |
+| 160 | Adam, lr=0.1                |  250 |     11.5719  |
+| 163 | Adam, lr=0.25               |  250 |     13.1022  |
+| 166 | Adam, lr=0.5                |  250 |     14.7769  |
+| 169 | AdamW, lr=0.01              |  250 |     11.1369  |
+| 172 | AdamW, lr=0.1               |  250 |     11.4414  |
+| 175 | AdamW, lr=0.25              |  250 |     13.4455  |
+| 178 | AdamW, lr=0.5               |  250 |     14.8998  |
+| 181 | SGD, lr=0.001               |  500 |    112.161   |
+| 184 | SGD, lr=0.001, momentum=0.9 |  500 |    111.043   |
+| 187 | SGD, lr=0.1, momentum=0.9   |  500 |    111.279   |
+| 190 | SGD, lr=0.25, momentum=0.9  |  500 |    106.884   |
+| 193 | Adam, lr=0.01               |  500 |     20.7528  |
+| 196 | Adam, lr=0.1                |  500 |     21.8232  |
+| 199 | Adam, lr=0.25               |  500 |     23.6266  |
+| 202 | Adam, lr=0.5                |  500 |     29.1146  |
+| 205 | AdamW, lr=0.01              |  500 |     20.5053  |
+| 208 | AdamW, lr=0.1               |  500 |     21.1729  |
+| 211 | AdamW, lr=0.25              |  500 |     25.9943  |
+| 214 | AdamW, lr=0.5               |  500 |     27.4975  |
+| 217 | SGD, lr=0.001               | 1000 |    175.257   |
+| 220 | SGD, lr=0.001, momentum=0.9 | 1000 |    174.16    |
+| 223 | SGD, lr=0.1, momentum=0.9   | 1000 |    174.478   |
+| 226 | SGD, lr=0.25, momentum=0.9  | 1000 |    173.907   |
+| 229 | Adam, lr=0.01               | 1000 |     42.3788  |
+| 232 | Adam, lr=0.1                | 1000 |     44.6583  |
+| 235 | Adam, lr=0.25               | 1000 |     51.6792  |
+| 238 | Adam, lr=0.5                | 1000 |     54.0213  |
+| 241 | AdamW, lr=0.01              | 1000 |     42.368   |
+| 244 | AdamW, lr=0.1               | 1000 |     43.5891  |
+| 247 | AdamW, lr=0.25              | 1000 |     47.2219  |
+| 250 | AdamW, lr=0.5               | 1000 |     67.4869  |
+
+##### n=4
+|     | optimizer                   |   k |   perplexity |
+|----:|:----------------------------|----:|-------------:|
+|   1 | SGD, lr=0.001               |  10 |     21.1501  |
+|   4 | SGD, lr=0.001, momentum=0.9 |  10 |     21.3211  |
+|   7 | SGD, lr=0.1, momentum=0.9   |  10 |     14.0249  |
+|  10 | SGD, lr=0.25, momentum=0.9  |  10 |      9.13845 |
+|  13 | Adam, lr=0.01               |  10 |      4.61708 |
+|  16 | Adam, lr=0.1                |  10 |      4.6413  |
+|  19 | Adam, lr=0.25               |  10 |      4.71555 |
+|  22 | Adam, lr=0.5                |  10 |      4.87531 |
+|  25 | AdamW, lr=0.01              |  10 |      4.65683 |
+|  28 | AdamW, lr=0.1               |  10 |      4.63912 |
+|  31 | AdamW, lr=0.25              |  10 |      4.67792 |
+|  34 | AdamW, lr=0.5               |  10 |      4.78001 |
+|  37 | SGD, lr=0.001               |  25 |     25.8113  |
+|  40 | SGD, lr=0.001, momentum=0.9 |  25 |     25.8148  |
+|  43 | SGD, lr=0.1, momentum=0.9   |  25 |     24.8644  |
+|  46 | SGD, lr=0.25, momentum=0.9  |  25 |     15.5899  |
+|  49 | Adam, lr=0.01               |  25 |      5.48138 |
+|  52 | Adam, lr=0.1                |  25 |      5.53404 |
+|  55 | Adam, lr=0.25               |  25 |      5.6931  |
+|  58 | Adam, lr=0.5                |  25 |      6.07726 |
+|  61 | AdamW, lr=0.01              |  25 |      5.46652 |
+|  64 | AdamW, lr=0.1               |  25 |      5.51964 |
+|  67 | AdamW, lr=0.25              |  25 |      5.67561 |
+|  70 | AdamW, lr=0.5               |  25 |      5.86646 |
+|  73 | SGD, lr=0.001               |  50 |     32.1287  |
+|  76 | SGD, lr=0.001, momentum=0.9 |  50 |     31.7287  |
+|  79 | SGD, lr=0.1, momentum=0.9   |  50 |     31.4458  |
+|  82 | SGD, lr=0.25, momentum=0.9  |  50 |     27.5076  |
+|  85 | Adam, lr=0.01               |  50 |      6.72357 |
+|  88 | Adam, lr=0.1                |  50 |      6.85621 |
+|  91 | Adam, lr=0.25               |  50 |      7.42815 |
+|  94 | Adam, lr=0.5                |  50 |      8.48646 |
+|  97 | AdamW, lr=0.01              |  50 |      6.71399 |
+| 100 | AdamW, lr=0.1               |  50 |      6.83002 |
+| 103 | AdamW, lr=0.25              |  50 |      7.36184 |
+| 106 | AdamW, lr=0.5               |  50 |      7.73648 |
+| 109 | SGD, lr=0.001               | 100 |     43.4035  |
+| 112 | SGD, lr=0.001, momentum=0.9 | 100 |     43.6203  |
+| 115 | SGD, lr=0.1, momentum=0.9   | 100 |     43.1025  |
+| 118 | SGD, lr=0.25, momentum=0.9  | 100 |     38.3857  |
+| 121 | Adam, lr=0.01               | 100 |      9.53637 |
+| 124 | Adam, lr=0.1                | 100 |     10.057   |
+| 127 | Adam, lr=0.25               | 100 |     11.4466  |
+| 130 | Adam, lr=0.5                | 100 |     13.3993  |
+| 133 | AdamW, lr=0.01              | 100 |      9.51245 |
+| 136 | AdamW, lr=0.1               | 100 |      9.72926 |
+| 139 | AdamW, lr=0.25              | 100 |     11.0275  |
+| 142 | AdamW, lr=0.5               | 100 |     12.9924  |
