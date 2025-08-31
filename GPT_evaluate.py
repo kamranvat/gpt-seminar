@@ -8,11 +8,11 @@ import json
 # Model and Test Configuration
 # ----------------------------
 MODELS = [
-    Path("checkpoints/model_h4_l6_b256_k5_it20000_lam5000.pt"),
-    Path("checkpoints/model_h4_l6_b256_k10_it20000_lam5000.pt"),
-    Path("checkpoints/model_h4_l6_b256_k25_it16000_lam5000.pt"),
-    Path("checkpoints/model_h4_l6_b256_k50_it16000_lam5000.pt"),
-    Path("checkpoints/model_h4_l6_b256_k10_it16000.pt")
+    Path("trained_gpt_models/model_h4_l6_b256_k5_it20000_lam5000.pt"),
+    Path("trained_gpt_models/model_h4_l6_b256_k10_it20000_lam5000.pt"),
+    Path("trained_gpt_models/model_h4_l6_b256_k25_it16000_lam5000.pt"),
+    Path("trained_gpt_models/model_h4_l6_b256_k50_it16000_lam5000.pt"),
+    Path("trained_gpt_models/model_h4_l6_b128_k10_it16000.pt")
 ]
 
 TEST_PROMPTS = [
@@ -23,22 +23,17 @@ TEST_PROMPTS = [
     # Sentiment
     ("Sweet joy fills the court.", "Positive Sentiment"),
     ("Dark grief weighs heavy on my heart.", "Negative Sentiment"),
-    # Thematic
-    ("Love's gentle hand.", "Theme: Love"),
-    ("Betrayal in the night.", "Theme: Betrayal"),
-    ("Bedazzled swagger and ", "Theme: Fashion / Invented words"),
-    # Scene setting
-    ("A room in the castle.", "Scene Setting"),
-    ("Thunder and lightning. Enter three Witches.", "Scene Setting"),
-    # Verse/meter
-    ("To be, or not to be: that is the question.", "Famous Line"),
+    # Famous
+    ("To be, or not to be: that is ", "Famous Line"),
     ("All the world's a ", "Famous Line"),
+    ("All that glitters is not ", "Famous Line"),
+
 ]
 
 # Parameters
-MAX_NEW_TOKENS = 1000
-TEMPERATURE = 0.7
-TOP_K = 40
+MAX_NEW_TOKENS = 256
+TEMPERATURE = 0.75
+TOP_K = 42
 TOP_P = 0.95
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
