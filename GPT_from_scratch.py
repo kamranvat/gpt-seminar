@@ -159,15 +159,19 @@ def get_batch_with_scheduling(
         len(data) > block_size + 1
     ), "Dataset is too short for the configured block_size."
     ix = torch.randint(len(data) - block_size - 1, (batch_size,))
-    x = torch.stack([data[i : i + block_size] for i in ix])
-    y = torch.stack([data[i + 1 : i + block_size + 1] for i in ix])
-    # with probability prob, use teacher forcing:
-    if torch.rand(1).item() < prob:
-        # Teacher forcing: use ground truth 
-        return x.to(device), y.to(device)
-    else:
-        # No teacher forcing: use model's prediction 
-        return x.to(device), model(x.to(device))[0].argmax(dim=-1)
+    x_gt = torch.stack([data[i : i + block_size] for i in ix]).to(device)
+    y = torch.stack([data[i + 1 : i + block_size + 1] for i in ix]).to(device)
+    x = x_gt.clone()
+    for t in range(1, block_size): # use first token as context and then use scheduled sampling / anneal teacher forcing
+        use_model_pred = torch.rand(batch_size, device=device) > prob
+        if use_model_pred.any():
+            # No teacher forcing for at least one sample in batch: use model's prediction 
+            logits, _ = model(x_gt[:, :t])
+            pred_token = logits[:, -1, :].argmax(dim=-1)
+            # replace gt input with model prediction
+            x[use_model_pred, t] = pred_token[use_model_pred]
+
+    return x, y
 
 
 @torch.no_grad()
@@ -389,15 +393,16 @@ def main():
 
         if scheduling:
             prob = teacher_forcing_prob_exponential(iter, teacher_forcing_lamda)
+                  
             xb, yb = get_batch_with_scheduling(
                 "train", train_data, val_data, device, prob, model
             )
         else:
             xb, yb = get_batch("train", train_data, val_data, device)
-        _, loss = model(xb, yb)
-        optimizer.zero_grad(set_to_none=True)
-        loss.backward()
-        optimizer.step()
+            _, loss = model(xb, yb)
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            optimizer.step()
 
         if iter == max_iters - 1:
             writer.close()
