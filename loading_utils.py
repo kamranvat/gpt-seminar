@@ -30,16 +30,17 @@ class FileUtils:
             )
 
         return corpus
-    
+
     @staticmethod
     def load_tokenized(corpusname, type, vocab, bpe=None, k=100, n_chars=None):
         from bpe_class import BPE  # Import here to avoid circular dependency
+
         if bpe is None:
             bpe = BPE(k=k)
 
         bpe.set_vocab(vocab)
         path = Paths.tokenized_dir / f"{corpusname}_{type}_n{n_chars}_k{k}.txt"
-        
+
         if path.exists():
             tokenized_corpus = FileUtils().load_vocab(path)
         else:

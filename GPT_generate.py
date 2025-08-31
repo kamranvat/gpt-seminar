@@ -9,8 +9,8 @@ from GPT_encode import GPTEncoder
 
 # ----------------------------
 # ----------------------------
-MODEL_PATH = Path("checkpoints/model_h4_l6_b128_k100_it12000.pt")  # Example filename
-START_TEXT = "Cleopatra "
+MODEL_PATH = Path("checkpoints/model_h4_l6_b128_k10_it16000.pt")  # Example filename
+START_TEXT = "All the world's a "
 
 def extract_model_params(model_path: Path):
     """
@@ -24,6 +24,8 @@ def extract_model_params(model_path: Path):
     for part in parts:
         if part.startswith("h"):
             params["n_head"] = int(part[1:])
+        elif part.startswith("lam"):
+            params["teacher_forcing_lamda"] = int(part[3:])
         elif part.startswith("l"):
             params["n_layer"] = int(part[1:])
         elif part.startswith("b"):
@@ -44,9 +46,9 @@ gpt_encoder = GPTEncoder(k=K)
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 START_IDS = gpt_encoder.encode_string(START_TEXT.casefold())
 MAX_NEW_TOKENS = 200
-TEMPERATURE = 0.6
-TOP_K = 50
-TOP_P = 0.9
+TEMPERATURE = 0.8
+TOP_K = 40
+TOP_P = 0.95
 
 SAVE_WEIGHTS_ONLY_COPY = False
 

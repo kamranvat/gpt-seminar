@@ -337,7 +337,7 @@ def main():
     results_dir = "results_bpe"
     os.makedirs(results_dir, exist_ok=True)
 
-    ks = [10, 25, 50]
+    ks = [8, 12]
     n_chars = None  # set to None to load full corpus
     vocabs = []
 
