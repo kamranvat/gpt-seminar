@@ -221,8 +221,7 @@ def test_perplexity(self, test):
 ```
 
 #### 2.3.2 Multi-order Analysis
-We tested n-gram orders from 1 to 3, examining how increased context length affects modeling performance. Higher-order models capture more linguistic structure but suffer from increased sparsity. <!-- sparsity? [TODO] -->
-[TODO] plot and description
+We tested n-gram orders from 1 to 3, examining how increased context length affects modeling performance. Higher-order models capture more linguistic structure but are much more computationally expensive.
 
 #### 2.3.3 Effect of k on perplexity
 We systematically evaluated how different values of k (BPE merge operations) affect perplexity when n is kept constant. As specified in the task, we focused on bigrams due to their balance of context and computational efficiency.
@@ -563,8 +562,6 @@ Best perplexities for n=4 for different ks (see appendix for a full table):
 
  — ShakespeareGPT (trained for 16k steps, k=10, block_size=128)
 
-<!-- [TODO]: add the parts from the new parts -->
-
 Our journey through natural language processing is nearing it's end and brought us to implement a full GPT-style-transformer.
 
 ### Building the Neural Architecture
@@ -734,9 +731,14 @@ We trained GPT models on differently tokenized corpora to compare the resulting 
 
 _5; 10; 25; 50_
 
-These were chosen since for the neural n-gram, <!-- [TODO was it the neural or regular?]--> we found lower perplexity values for lower values of k. This result seems to hold, at least in GPT training: 
+These were chosen since for the n-grams, we found lower perplexity values for lower values of k. This result seems to hold, at least in GPT training: 
+Training loss:
+<img width="330" height="200" alt="Loss_train" src="https://github.com/user-attachments/assets/5cc5f077-883d-4e6e-8be7-472a972a891b" />
 
-[TODO] add graphic of training here
+
+Validation loss:
+<img width="330" height="200" alt="Loss_val" src="https://github.com/user-attachments/assets/8e506a88-80df-4127-9d54-410cd19e5efd" />
+
 
 We initially trained one model with a context size of 128, 4 attention heads, and 6 layers on a corpus segmented with k=10. Training was performed on a Nvidia RTX 5070ti GPU for 50.000 iterations, to observe the amount of overfitting we would achieve. The training and validation loss during training can be seen below:
 
