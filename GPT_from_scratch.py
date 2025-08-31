@@ -5,6 +5,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 from torch.utils.tensorboard import SummaryWriter
 import time
+import time
 
 # from save_utils import save_checkpoint
 from GPT_encode import GPTEncoder
@@ -50,6 +51,9 @@ SAVE_INTERVAL = 4000
 batch_size = 256  # sequences per batch
 block_size = 256  # context length
 max_iters = 40000
+batch_size = 256  # sequences per batch
+block_size = 256  # context length
+max_iters = 40000
 eval_interval = 2000
 learning_rate = 1e-4
 eval_iters = 250
@@ -58,7 +62,7 @@ n_head = 4
 n_layer = 6
 dropout = 0.1
 scheduling = False  # if True, use teacher forcing with scheduled sampling
-teacher_forcing_lamda = 0.5 * max_iters  # decay rate
+teacher_forcing_lamda = 5000  # decay rate
 patience = 2
 
 # # ----------------------------
@@ -166,10 +170,12 @@ def get_batch_with_scheduling(
     x_gt = torch.stack([data[i : i + block_size] for i in ix]).to(device)
     y = torch.stack([data[i + 1 : i + block_size + 1] for i in ix]).to(device)
     x = x_gt.clone()
-    for t in range(1, block_size): # use first token as context and then use scheduled sampling / anneal teacher forcing
+    for t in range(
+        1, block_size
+    ):  # use first token as context and then use scheduled sampling / anneal teacher forcing
         use_model_pred = torch.rand(batch_size, device=device) > prob
         if use_model_pred.any():
-            # No teacher forcing for at least one sample in batch: use model's prediction 
+            # No teacher forcing for at least one sample in batch: use model's prediction
             logits, _ = model(x_gt[:, :t])
             pred_token = logits[:, -1, :].argmax(dim=-1)
             # replace gt input with model prediction
@@ -374,6 +380,7 @@ def main():
         learning_rate=learning_rate,
         max_iters=max_iters,
     )
+    out_root = Path("checkpoints")
 
     # tensorboard
     run_id = build_model_path(
@@ -381,7 +388,7 @@ def main():
         n_head,
         n_layer,
         block_size,
-        step=iter,
+        step=" ",
         k=K,
         lamda=teacher_forcing_lamda,
     )
@@ -408,7 +415,7 @@ def main():
                 iter,
             )
 
-            # Early stopping / patience check 
+            # Early stopping / patience check
             if losses["val"] < best_valid_loss:
                 best_valid_loss = losses["val"]
                 steps_without_validation_improvement = 0
@@ -424,17 +431,17 @@ def main():
                 model.load_state_dict(best_model_state)
                 break
 
+
         # Save model checkpoints regularly
-        if iter % SAVE_INTERVAL == 0 or iter == max_iters - 1:
-            out_root = Path("checkpoints")
+        if (iter % SAVE_INTERVAL == 0 or iter == max_iters - 1) and iter > 0:
             save_path = build_model_path(
-                out_root,
-                n_head,
-                n_layer,
-                block_size,
                 step=iter,
                 k=K,
                 lamda=teacher_forcing_lamda,
+                out_root=out_root,
+                n_head=n_head,
+                n_layer=n_layer,
+                block_size=block_size,
             )
             torch.save(model, save_path)  # <-- save the entire model object
             print(f"[saved] {save_path}")
@@ -442,7 +449,7 @@ def main():
         # Update teacher annealing
         if scheduling:
             prob = teacher_forcing_prob_exponential(iter, teacher_forcing_lamda)
-                  
+
             xb, yb = get_batch_with_scheduling(
                 "train", train_data, val_data, device, prob, model
             )
