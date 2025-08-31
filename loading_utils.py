@@ -32,6 +32,36 @@ class FileUtils:
         return corpus
 
     @staticmethod
+    def load_tokenized(corpusname, type, vocab, bpe=None, k=100, n_chars=None):
+        from bpe_class import BPE  # Import here to avoid circular dependency
+
+        if bpe is None:
+            bpe = BPE(k=k)
+
+        bpe.set_vocab(vocab)
+        path = Paths.tokenized_dir / f"{corpusname}_{type}_n{n_chars}_k{k}.txt"
+
+        if path.exists():
+            tokenized_corpus = FileUtils().load_vocab(path)
+        else:
+            print(
+                "tokenized corpus has not been saved before, will be tokenized and stored now"
+            )
+            Paths.tokenized_dir.mkdir(exist_ok=True, parents=True)
+            tokenized_corpus, _, _ = bpe.test(
+                vocab,
+                FileUtils().load_corpus(
+                    Paths.corpus_dir / f"{corpusname}_{type}.txt", window_size=None
+                ),
+            )
+            corpus_name = f"{corpusname}_{type}_n{n_chars}_k{k}.txt"
+            FileUtils.store_vocab(
+                list(tokenized_corpus), Paths.tokenized_dir, corpus_name
+            )
+
+        return tokenized_corpus
+
+    @staticmethod
     def preprocess_corpus(corpus, lowercase=True, rm_whitespace=True):
         """Take the raw corpus and return the preprocessed corpus"""
         # TODO: add regex things in here?

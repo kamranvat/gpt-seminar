@@ -4,27 +4,59 @@ import sys
 import types
 import torch
 import torch.nn.functional as F
-import GPT_from_scratch as g 
+import GPT_from_scratch as g
+from GPT_encode import GPTEncoder
 
 # ----------------------------
-# Configuration 
 # ----------------------------
-MODEL_PATH      = Path("checkpoints\model_h4_l6_b128_it10000.pt")  # <--- change to your file
-VOCAB_PATH      = Path("data/vocab_nNone_k2000.txt") 
-DEVICE          = "cuda" if torch.cuda.is_available() else "cpu"
+MODEL_PATH = Path("checkpoints/model_h4_l6_b128_k10_it16000.pt")  # Example filename
+START_TEXT = "All the world's a "
 
-START_IDS       = [0]    # prompt as token IDs; change if your BOS isn't 0
-MAX_NEW_TOKENS  = 400
-TEMPERATURE     = 0.7
-TOP_K           = 50   
-TOP_P           = 0.9    
+def extract_model_params(model_path: Path):
+    """
+    Extracts hyperparameters from the model filename.
+    Expected format: model_h{n_head}_l{n_layer}_b{block_size}_k{K}_it{iter}.pt
+    Returns a dict of params.
+    """
+    filename = model_path.stem
+    parts = filename.split("_")
+    params = {}
+    for part in parts:
+        if part.startswith("h"):
+            params["n_head"] = int(part[1:])
+        elif part.startswith("lam"):
+            params["teacher_forcing_lamda"] = int(part[3:])
+        elif part.startswith("l"):
+            params["n_layer"] = int(part[1:])
+        elif part.startswith("b"):
+            params["block_size"] = int(part[1:])
+        elif part.startswith("k"):
+            params["K"] = int(part[1:])
+        elif part.startswith("it"):
+            params["iter"] = int(part[2:])
+    return params
 
-# Set to True once to save a weights-only file (future-proof loading)
+
+params = extract_model_params(MODEL_PATH)
+K = params["K"]
+BLOCK_SIZE = params.get("block_size", 128)  # fallback default
+
+VOCAB_PATH = Path(f"data/vocab_nNone_k{K}.txt")
+gpt_encoder = GPTEncoder(k=K)
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+START_IDS = gpt_encoder.encode_string(START_TEXT.casefold())
+MAX_NEW_TOKENS = 200
+TEMPERATURE = 0.8
+TOP_K = 40
+TOP_P = 0.95
+
 SAVE_WEIGHTS_ONLY_COPY = False
 
 # ----------------------------
 # Helpers
 # ----------------------------
+
+
 def load_vocab_tokens(vocab_path: Path | None):
     if not vocab_path:
         return None
@@ -32,6 +64,7 @@ def load_vocab_tokens(vocab_path: Path | None):
     if not isinstance(toks, list) or not all(isinstance(t, str) for t in toks):
         raise ValueError("Vocab must be a JSON list of strings.")
     return toks
+
 
 def _alias_classes_into_main():
     """
@@ -49,6 +82,7 @@ def _alias_classes_into_main():
     m.Block = g.Block
     m.GPT = g.GPT
 
+
 def load_full_model(model_path: Path, device: str | torch.device):
     """
     Robust loader for a full-object checkpoint saved via torch.save(model, ...),
@@ -60,7 +94,10 @@ def load_full_model(model_path: Path, device: str | torch.device):
     # 1) Try safe load with allowlisted classes (keeps weights_only=True)
     try:
         from torch.serialization import safe_globals
-        with safe_globals([g.Head, g.MultiHeadAttention, g.FeedForward, g.Block, g.GPT]):
+
+        with safe_globals(
+            [g.Head, g.MultiHeadAttention, g.FeedForward, g.Block, g.GPT]
+        ):
             model = torch.load(model_path, map_location="cpu", weights_only=True)
         model.to(device).eval()
         return model
@@ -72,6 +109,7 @@ def load_full_model(model_path: Path, device: str | torch.device):
     model = torch.load(model_path, map_location="cpu", weights_only=False)
     model.to(device).eval()
     return model
+
 
 @torch.no_grad()
 def generate_ids(
@@ -119,11 +157,13 @@ def generate_ids(
         idx = torch.cat((idx, idx_next), dim=1)
     return idx[0].tolist()
 
+
 def decode_ids(ids: list[int], id_to_token: list[str] | None):
     if id_to_token is None:
         return f"(IDs) {ids}"
     # Many BPE tokens include spaces; join directly
     return "".join(id_to_token[i] for i in ids if 0 <= i < len(id_to_token))
+
 
 # ----------------------------
 # main
@@ -156,6 +196,7 @@ def main():
         print("\n--- Generated Text ---\n")
         print(decode_ids(gen_ids, id_to_token))
         print("\n----------------------")
+
 
 if __name__ == "__main__":
     main()

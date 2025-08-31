@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from pathlib import Path
-from utils import FileUtils, Paths
+from loading_utils import FileUtils, Paths
 from bpe_class import BPE
 
 # ---- params ----
