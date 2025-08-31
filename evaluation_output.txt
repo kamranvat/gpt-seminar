@@ -1,0 +1,270 @@
+
+==============================
+Testing Model: model_h4_l6_b256_k5_it20000_lam5000.pt
+Params: {'n_head': 4, 'n_layer': 6, 'block_size': 256, 'K': 5, 'iter': 20000, 'teacher_forcing_lamda': 5000}
+==============================
+
+--- Test: Character Entrance ---
+Prompt: Enter Cleopatra.
+Output:
+enter cleopatra. mark antony now, i do not live to a kingdom and say you, the liar of her cursed with the discontinuance sense. demetrius no, no, come not me, nor part in the precious near of the churchyard; if i cannot can call. o, charmian, whom choose, you may seek fair your grace between at the gr
+-------------------------
+
+--- Test: Character Entrance ---
+Prompt: Enter Brutus.
+Output:
+enter brutus. brutus have you not got so. cassius i do confess me, that i will not. brutus hath made them after they have no put on the field of a fair day. cassius they are most fight. brutus what is it? casca what says they? casca brutus he answer that why, because themselves. casca what do you been the
+-------------------------
+
+--- Test: Character Entrance ---
+Prompt: Enter Hamlet.
+Output:
+enter hamlet. o and ophelia he hath lose ambitious of an every times in the world; and that i loved by the world he gives my better antonio and court the guest, i have a sword of a peace: what most purposest death him he means that thou shalt charge and a poor blessing day. gratiano o stand his aff
+-------------------------
+
+--- Test: Positive Sentiment ---
+Prompt: Sweet joy fills the court.
+Output:
+sweet joy fills the court. puck the draw of the houses of money speak to the spirit. and we of your grave-wives: if it be so, that is contrived me, i will be fatal as the fortune of my accustomarch. he is not so, my lord. hamlet is it in such sleep coming; for i will not love a letter from her eye man. first clo
+-------------------------
+
+--- Test: Negative Sentiment ---
+Prompt: Dark grief weighs heavy on my heart.
+Output:
+dark grief weighs heavy on my heart. bassanio good my lord, bring it, my lord! why i will go with you? shylock i think you, to go get the leave of such a courtesy rouse and maid many of poor and trees for the charge. shylock i am my bond. shylock me, thou shalt not consent! macbeth i'll be the placed to dream. l
+-------------------------
+
+--- Test: Famous Line ---
+Prompt: To be, or not to be: that is 
+Output:
+to be, or not to be: that is no more than he is true; and all things may die, and with me with thin i have two of such things as any thing, that seen there would have been this handsome proud compassion: i think thee, when thou mayst leave thy self-tongued and half to parted me, thou hast not love, that i may part. oberon 
+-------------------------
+
+--- Test: Famous Line ---
+Prompt: All the world's a 
+Output:
+all the world's a great of that world with sweater fortune. friar laurence and all stemids the heart of a fresh tongue of bond with thee! how comes in the earth of many father away? romeo i have heard of the earth of breath, my father's certain by and the feel of my mind, are word i am any thing man. i 
+-------------------------
+
+--- Test: Famous Line ---
+Prompt: All that glitters is not 
+Output:
+all that glitters is not to come my face. duncan do you with well that you show me to have walk in father been for your worship's child: and you now all thing your good dishonour that i am your honour more of your father's blood, the east to friend of brief of your pleasures from the world draw and ho
+-------------------------
+
+
+==============================
+Testing Model: model_h4_l6_b256_k10_it20000_lam5000.pt
+Params: {'n_head': 4, 'n_layer': 6, 'block_size': 256, 'K': 10, 'iter': 20000, 'teacher_forcing_lamda': 5000}
+==============================
+
+--- Test: Character Entrance ---
+Prompt: Enter Cleopatra.
+Output:
+enter cleopatra. cleopatra and desdemona i will tell you in egypt. clown all you well, you pray you, look on me. clown away, clown me now, my lord. clown you die, what hast thou done to say away? clown gentleman? clown of his chamber. clown ha! o heaven! die with the matter closed love on her shoes a g
+-------------------------
+
+--- Test: Character Entrance ---
+Prompt: Enter Brutus.
+Output:
+enter brutus. octavius caesar, why, lepidus, and others caesar to caesar what you shall hear it? mecaenas why, have you not? octavius caesar send him you may: agrippa what poison you that? octavius caesar why, sir, he comes. agrippa dolabella, not you know: why dost thou think'st before this? why, that say'
+-------------------------
+
+--- Test: Character Entrance ---
+Prompt: Enter Hamlet.
+Output:
+enter hamlet. theseus they say they have themselves and dry me with fairs do seem but with the bloody death: and they be with itself! they both with love's make coming, and make a maid's not command. king claudius thou mayst from hadst leave them to the cup: it is a fault to be man. rosencrantz guildenstern what we think is 
+-------------------------
+
+--- Test: Positive Sentiment ---
+Prompt: Sweet joy fills the court.
+Output:
+sweet joy fills the court. first senator do you shall be worthy your remember your perfect is not so. exeunt scene iv. the same. a street. enter hamlet and laertes what hamlet a montague o' the watch? horatio horatio a common head? hamlet horatio my lord, i do know them again. hamlet i will not set him not. for it
+-------------------------
+
+--- Test: Negative Sentiment ---
+Prompt: Dark grief weighs heavy on my heart.
+Output:
+dark grief weighs heavy on my heart. cassius noble launcelot, sir, you were heard my lord hazard, my lord, for the prince of lord and common he was a man: there are they better stay'd what my had i have done their own shall hear him a proof malice: but come, good brutus, to wake by no wrath of love: i will see your nature, for you. c
+-------------------------
+
+--- Test: Famous Line ---
+Prompt: To be, or not to be: that is 
+Output:
+to be, or not to be: that is not be fear in me. iago no, nor children with cassio, by him, cassio, no more of that; i do bring me the hates but no more; and there is no more. othello iago so, that i should be suffer'd in the same to the follow of a savage-tale damned loss, and not to draw their interest. iago i have myself in a dea
+-------------------------
+
+--- Test: Famous Line ---
+Prompt: All the world's a 
+Output:
+all the world's a holy change: the world is subject in our call as a fair doth appetite, and the sense fell that is heavens to be rusted world a heart of earth, and that would have been proof. ophelia do not so. lord polonius that's further do: the head of fortune thanks. lord polonius madam, my lord. lord polonius the queen 
+-------------------------
+
+--- Test: Famous Line ---
+Prompt: All that glitters is not 
+Output:
+all that glitters is not a pain proceeding with men; her beauty things at the prince. enter the poor macbeth what man master a messenger what is your number? macbeth gone? macbeth no, for do i speak the instantly to you. lennox menas your father than accounted long to the beating to acceptance: the capulet's accums. macbeth i 
+-------------------------
+
+
+==============================
+Testing Model: model_h4_l6_b256_k25_it16000_lam5000.pt
+Params: {'n_head': 4, 'n_layer': 6, 'block_size': 256, 'K': 25, 'iter': 16000, 'teacher_forcing_lamda': 5000}
+==============================
+
+--- Test: Character Entrance ---
+Prompt: Enter Cleopatra.
+Output:
+enter cleopatra.-- i hear none to bear by noble heart. cleopatra i would be heard of proculeius' say hold, nor to well, that my remorse: who did he should have been post should she run into them, but for a drown safety, in flesh and she fledge his legions, and was did success, as false his hands, his green, to his head, and he compassing me some passion, and 
+-------------------------
+
+--- Test: Character Entrance ---
+Prompt: Enter Brutus.
+Output:
+enter brutus. cassius abrutus he is fight; his loved with him. cassius what a like between us? casca peace? casca he is no more, casca of him rome him. casca why, stay! casca he is priestor; but yet i'll catch him antony, metellus cimber me to his shrift. cinna he is mean he whole man? casca ay, that they call the murderer of his ar
+-------------------------
+
+--- Test: Character Entrance ---
+Prompt: Enter Hamlet.
+Output:
+enter hamlet.' queen gertrude so, hamlet, sweet strong lapped his brother's death of his eyes distrong'd. hamlet why, why? why, why dost thou art absure? first clown in the player lady? horatio thou know'st thou hast to stir, that i did with lady's firm'd to me: thou art said it that much me the moon man love's eyes than my wife't childhood. 
+-------------------------
+
+--- Test: Positive Sentiment ---
+Prompt: Sweet joy fills the court.
+Output:
+sweet joy fills the court.--there is the multies but caesar, do with him what tears the triumphs of his bosoms and bow of his death: but what he was he did might fit of war and fear, of march figure, whose may religions and steels and carried his like a fee, whose of caesar's recovery, seem the firm for a firmaments. shylock doth what, is your processary, such was a 
+-------------------------
+
+--- Test: Negative Sentiment ---
+Prompt: Dark grief weighs heavy on my heart.
+Output:
+dark grief weighs heavy on my heart.-- iago i have no more to work him a-- othello o heaven, i shall be should not live to the jew, iago! othello if i will take it, i will drink him impedim it not. iago i have think you in him wrong'd forget to praising him. othello how come, the emperor, that men should stir discourse lives before itself we must be sorrow'd, and there we 
+-------------------------
+
+--- Test: Famous Line ---
+Prompt: To be, or not to be: that is 
+Output:
+to be, or not to be: that is a man's sheep of more of property, that profit of hearts, till we precious creatures with me. horatio come, sir, how down the news. horatio set they were gentlemen, sir. hamlet horatio within my more than enemies. i am gentlemen, this same is coming'd; 'tis not to say the strongers of it: 'twere it first goes it it were a which the propo
+-------------------------
+
+--- Test: Famous Line ---
+Prompt: All the world's a 
+Output:
+all the world's a virtue for the world, his commanded state: if he laugh of his gifts be dream, the thane of old man; and the strike meet deep to purged from her make the gods; and purpose of it, and sight! for romeo her poor a laurence of cassius' hour, he'll be hereafter cassius. friar laurence go to the general come, sir; be these bolds with b
+-------------------------
+
+--- Test: Famous Line ---
+Prompt: All that glitters is not 
+Output:
+all that glitters is not a tainter's house. but let it shall please to him play he shall be. let him go, i'll give him this fingers in the particular: he will presently to the slaves of his face. if you will direct them to such a day. no, nor doubt, but the fine of traitor man free with current me with further golden in received with valour and his sole in maids, 
+-------------------------
+
+
+==============================
+Testing Model: model_h4_l6_b256_k50_it16000_lam5000.pt
+Params: {'n_head': 4, 'n_layer': 6, 'block_size': 256, 'K': 50, 'iter': 16000, 'teacher_forcing_lamda': 5000}
+==============================
+
+--- Test: Character Entrance ---
+Prompt: Enter Cleopatra.
+Output:
+enter cleopatra.s sir, proculeius, and stolen you know what you shall not assure. cleopatra your several sailors, that i may part, then what was i wonder to further? octavius caesar no, not i. agrippa, where do so? cleopatra, charmian, good married, who knows not live. charmian no, sir, where is my face? alexas where's forest? cleopatra he hath didst thou think? is it not walk? cleop
+-------------------------
+
+--- Test: Character Entrance ---
+Prompt: Enter Brutus.
+Output:
+enter brutus. metellus cimber what shall we cannot from his face? cinna the poet shall caesar. cinna o, farewell. exeunt cinna the poet and cinna the poet cinna the poet what confess this casca poet they are with coming. cinna caesar poet me in an unlock'd. caesar, mark antony, i take it fair. caesar him away: he is all take my father's a heart in his pock. caesar's spot. caesar is true, fell
+-------------------------
+
+--- Test: Character Entrance ---
+Prompt: Enter Hamlet.
+Output:
+enter hamlet.' queen gertrude good hamlet not i; i will know thee down: i would thou hast done thy thane of thy soul: for i would were too together, i am satisfied thy face: but thou have no more the assame for my soul i spoke thy face hath no more than to a rude than a poor souls, fairer than keep indeed upon the drum and than country possess, but that thou blessing and lank of my train'd but conclusion
+-------------------------
+
+--- Test: Positive Sentiment ---
+Prompt: Sweet joy fills the court.
+Output:
+sweet joy fills the court.' romeo heaven! not mercutio! what says 'tis the more of venice, and to whom he that he did swounds me with face of join'd. mercutio i did relote help me, but this act and an unsuch a fault of any thing such a sum of exact venus will not sweeting but when she shall such a man for love, it is impart to know the knave a man. benvolio a good night from his rack. mercutio a very short: if i say 'ay
+-------------------------
+
+--- Test: Negative Sentiment ---
+Prompt: Dark grief weighs heavy on my heart.
+Output:
+dark grief weighs heavy on my heart.--and so follow'd me doth not thisby? cassio why, what's this? casca ay, here's my love? iago it is not you. iago marry, and it cassio not for my wise: if i can tell you what i should be so soon as well as it fall, i am too honesty, if it be as her gold, that he can play at her to my daughter. here, sir, as a gentleman of all my suit: but since as i think the sums of my prize, and 
+-------------------------
+
+--- Test: Famous Line ---
+Prompt: To be, or not to be: that is 
+Output:
+to be, or not to be: that is the courtier's to-day, and i am prophesy. cassio is that he's dead? iago home, gentlemen, good gentlemen, iago: take heed, and know not; take heed him he comes to the dead of other had been. iago believe he had been so such a man he did, that he died. othello why, then? iago i know not fear not: if you could not what is a hand, i am none of his name, or known, i am not once this night;
+-------------------------
+
+--- Test: Famous Line ---
+Prompt: All the world's a 
+Output:
+all the world's a good night. desdemona go to; for i have seen your great good night. desdemona 'tis a night: othello that did you shall well. exit othello she is dead. desdemona shall never know all dead? othello i am northus there is no further of you. desdemona good my lord, for i have no worthy eyes in you. emilia othello what thou shouldst have spoke to-night, thou dost thy face is well, th
+-------------------------
+
+--- Test: Famous Line ---
+Prompt: All that glitters is not 
+Output:
+all that glitters is not so; which they did send their duty: cassio i never so, here in my old is a most start as a man. i will be body her true that they be as infections: i will remain unto your run to wash this night. othello this is the perils of my heart. iago i go; get me to see my father's grain a night; for he put on her life; and therefore he shall not come back above the robb'd that he hath rosal
+-------------------------
+
+
+==============================
+Testing Model: model_h4_l6_b128_k10_it16000.pt
+Params: {'n_head': 4, 'n_layer': 6, 'block_size': 128, 'K': 10, 'iter': 16000}
+==============================
+
+--- Test: Character Entrance ---
+Prompt: Enter Cleopatra.
+Output:
+enter cleopatra. enter a break, domitius enobarbus cleopatra is not well as i mean, i must compel. exit messenger madam, caesar; this good lady macbeth one that he does do not make the blood for such a cheek at passess, shall see the begin to be bridge: when thou my life's dearest action to bear the way of love
+-------------------------
+
+--- Test: Character Entrance ---
+Prompt: Enter Brutus.
+Output:
+enter brutus. cassius when he is full of brutus! casca what caesar marry he? caesar calpurnia caesar doth him from his feeble hardship been come before the castle. cassius marcus brutus what, wouldst thou have heard me a battle fatal? brutus what, he is with part? cassius this, and will not afraid to hi
+-------------------------
+
+--- Test: Character Entrance ---
+Prompt: Enter Hamlet.
+Output:
+enter hamlet. queen gertrude no, my lord! hamlet i have the words: i do beseech you, to let me speak against me, you shall be here in an old to part them, have i forget it. queen gertrude good polonius, i was a brave of the word, cassius, and shall be not from the commander: this meetly to seek the heavens. hamlet he
+-------------------------
+
+--- Test: Positive Sentiment ---
+Prompt: Sweet joy fills the court.
+Output:
+sweet joy fills the court. paris are them, the state of them, and blaze they say were so long. exeunt scene v. a room in the castle. enter portia and nerissa portia peter quince, lady most nurse, yea, you are you my father with me to say his tail. speak that news. bottom what i must fall? as i would not do a marriage, if were be th
+-------------------------
+
+--- Test: Negative Sentiment ---
+Prompt: Dark grief weighs heavy on my heart.
+Output:
+dark grief weighs heavy on my heart. lady macbeth be there's not a monstrous heart: thou wouldst not have me, nor i did intend thee the beggar of these more to falls than their start a words. lady macbeth to give it your hand. lady macbeth if it fled what it is, your honour, that many lady is your grace. macbeth let not enough, but to your wife: 
+-------------------------
+
+--- Test: Famous Line ---
+Prompt: To be, or not to be: that is 
+Output:
+to be, or not to be: that is all as better death with their blows course and fury a substance, that are many of his shadows i will be heard of heaven him both. macduff contradition he will being bad enter done by what i should be work hath had a more deport. doctor this may be therefore, i pray you, let him come to leave the spir
+-------------------------
+
+--- Test: Famous Line ---
+Prompt: All the world's a 
+Output:
+all the world's a monster. i have my bond, and i think my master of a chamber had been that endeavour and hath breath of my sword, then i have look'd to bear me thus a soldier's course of passion from the heaven, if thou wilt not go to me to be play. enter polonius and gratiano how i say, good signior, with all my come
+-------------------------
+
+--- Test: Famous Line ---
+Prompt: All that glitters is not 
+Output:
+all that glitters is not for the main which thou didst die. hear the news of this chaste the division of her and her sight. duke of venice it was false: faith, and find the murderers' not wondrous this, sir, that he is the matter, and let me direct my curse. macbeth art you there? why should i must be seen? macbeth not, my lord, i have an ill i
+-------------------------
+
