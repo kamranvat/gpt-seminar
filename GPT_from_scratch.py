@@ -58,7 +58,7 @@ SAVE_INTERVAL = 4000
 # dropout       = 0.0
 
 # ----------------------------
-# Hyperparameters - Medium model
+# Hyperparameters - "Large" model
 # ----------------------------
 batch_size = 256  # sequences per batch
 block_size = 256  # context length
@@ -77,19 +77,6 @@ scheduling = False  # if True, use teacher forcing with scheduled sampling
 teacher_forcing_lamda = 5000  # decay rate
 patience = 2
 
-# # ----------------------------
-# # Hyperparameters - Large model
-# # ----------------------------
-# batch_size    = 128         # sequences per batch
-# block_size    = 128        # context length
-# max_iters     = 20000
-# eval_interval = 2000
-# learning_rate = 3e-4
-# eval_iters    = 400
-# n_embd        = 256
-# n_head        = 16
-# n_layer       = 12
-# dropout       = 0.1
 
 # ----------------------------
 # Device

@@ -1,12 +1,12 @@
 # REPORT
-Our implementation demonstrates the evolution of natural language processing techniques, from simple statistical methods to more sophisticated neural approaches. The code is structured modularly, with separate implementations for BPE tokenization, classical n-gram models, and neural n-gram networks.
+This report describes our implementation of the four milestone tasks in the "Building GPT from Scratch" seminar, from simple statistical methods to more sophisticated neural approaches. The code is structured modularly, with separate implementations for BPE tokenization, classical n-gram models, neural n-gram networks, and GPT models, and this report describes both the functionality and the results of the respective parts of the implementation.
 
 
 ## Task 0: Text Analysis
-To get an overview of the data, we implemented both Unix-style commands and Python equivalents for analyzing the initial Shakespeare corpus. The analysis revealed the fundamental characteristics of the text that would inform our subsequent modeling decisions.
+To get an overview of the data, we implemented both Unix-style commands and Python equivalents for analyzing the initial Shakespeare corpus, as shown below.
 
 ### 0.1 Space-based Tokenization
-The initial corpus analysis was performed using space-based tokenization to understand word frequency distributions. We implemented both shell-style and Python approaches:
+The initial corpus analysis was performed using space-based tokenization to understand word frequency distributions:
 
 Bash command:
 ```bash
@@ -43,7 +43,8 @@ The analysis revealed the most frequent tokens in the original corpus:
 10016 in
 8954 d
 ```
-This frequency distribution follows the expected Zipfian distribution typical of natural language, with function words dominating the vocabulary.
+<!-- This frequency distribution follows the expected Zipfian distribution typical of natural language, with function words dominating the vocabulary. -->
+As expected, function words dominate the vocabulary.
 
 
 ## Task 1: Data Preparation and Segmentation with BPE
@@ -60,11 +61,11 @@ The cleaning process significantly reduced corpus size:
 Original corpus: 4,941,133 characters (901,325 words)
 Cleaned corpus: 1,041,007 characters (190,999 words)
 
-A cleaned version of the corpus with proper train/test/validation splits was provided by course participant Mohamed Ebrahim, which we used for subsequent experiments.
+A cleaned version of the corpus with proper train/test/validation splits was kindly provided by course participant Mohamed Ebrahim, which we used for subsequent experiments.
 
 
 ### 1.2 BPE Implementation
-We implemented Byte Pair Encoding (BPE) as a subword tokenization method. The algorithm follows these key steps:
+We implemented Byte Pair Encoding (BPE) as a subword tokenization method. The algorithm follows these steps:
 
 1. Initialization: Start with individual characters as the initial vocabulary
 2. Pair counting: Count all adjacent token pairs in the corpus
@@ -109,7 +110,8 @@ We used two methods to evaluate performance, coverage analysis and comparison of
 
 - Token length distribution: compares the distribution of the token lengths of the segmented text for different datasets. The distributions should be similar if the tokenizer generalized well to the other dataset. 
 
-The evaluation used coverage metrics, measuring how well the learned vocabulary segments unseen text. We tested multiple values of k (number of merges) ranging from 100 to 10,000.
+With these coverage metrics, we tested multiple values of k (number of merges) ranging from 100 to 10,000.
+
 #### Coverages
 ![alt coverages](../final_results/bpe/coverages.png)
 
@@ -132,13 +134,15 @@ As in the coverage plot, there is a high similarity between the token length dis
 
 ## Task 2: N-gram Engine
 > "All the world's a stage, and all the men and women merely players; they have their exits and their entrances, and one man in his time plays many parts."
+
  — William Shakespeare
 
 > "_All the world's a stage,_'--or 'i' the world is slain. iras cleopatra o noble weak, lo, here it is. iago nay, but not in my heart of breath: it is a customach, adieutenant-gown upon the best to have it so. o, iago? iago why, by making quince, snout snout snout snout sn"
+
  — Shakespeare n-gram (k=1000, n=3, greedy sampling)
 
 ### 2.1 Data Usage and Validation Strategy
-As defined in the task, we utilized the cleaned Shakespeare corpus with proper train/test/validation splits for all n-gram experiments. The validation set served specifically for hyperparameter optimization in interpolation models, while k values were treated as a separate experimental variable. 
+As defined in the task, we used the cleaned Shakespeare corpus with proper train/test/validation splits for all n-gram experiments. The validation set served specifically for hyperparameter optimization in interpolation models, while k values were treated as a separate experimental variable. 
 
 ### 2.2 N-gram Engine Implementation
 Our n-gram implementation supports arbitrary n (provided adequate computational resources are available) and includes both Laplace smoothing and simple interpolation. The n-gram engine operates on BPE-tokenized text, allowing for subword-level language modeling. This approach combines the benefits of subword regularization with statistical language modeling. The core architecture uses matrices to store frequencies and probabilities for all n:
@@ -165,6 +169,7 @@ def train(self, train):
 
 Interpolated probabilities are obtained by interpolating between probabilities for a token and the corresponding context for different ns, with the degree of influence determined by lambdas. These hyperparameters have to be optimized on the validation set after the N-gram has been trained (i.e. the frequency counts have been obtained) and before interpolated probabilities can be computed. 
 We implemented a simple optimization of the lambda hyperparameters using random search with optional parallelization to speed up the process of drawing many samples for optimization: 
+
 ```python
 def optimize_lambdas(self, validation, strategy="random", samples=1000, grid=None, parallelize=True):
     # strategy options: random, grid(search),
@@ -216,17 +221,18 @@ def test_perplexity(self, test):
 ```
 
 #### 2.3.2 Multi-order Analysis
-We tested n-gram orders from 1 to 4, examining how increased context length affects modeling performance. Higher-order models capture more linguistic structure but suffer from increased sparsity.
+We tested n-gram orders from 1 to 4, examining how increased context length affects modeling performance. Higher-order models capture more linguistic structure but suffer from increased sparsity. <!-- sparsity? [TODO] -->
 [TODO] plot and description
 
 #### 2.3.3 Effect of k on perplexity
 We systematically evaluated how different values of k (BPE merge operations) affect perplexity when n is kept constant. As specified in the task, we focused on bigrams due to their balance of context and computational efficiency.
-As evident from the plot below, higher ks tend to lead to higher perplexity values, not only on the test but also on the training and validation sets. This is not surprising, however, as higher k values corresponding to more merges in the BPE, and thus a larger vocabulary, leading to individual probabilities in the matrix being reduced due to the larger number of possibilities and the smoothing being applied.
+As evident from the plot below, higher ks tend to lead to higher perplexity values, not only on the test but also on the training and validation sets. This is not surprising, however, as higher k values correspond to more merges in the BPE, and thus a larger vocabulary. This leads to individual probabilities in the matrix being reduced due to the larger number of possibilities and the smoothing being applied.
 [TODO] plot
 
 
 ### 2.4 Extrinsic Evaluation
 We implemented a method for generating text from the n-gram models to allow for extrinsic, qualitative evaluation. 
+
 #### 2.4.1 Text Generation
 Our n-gram models support both greedy and sampling-based text generation:
 ```python
@@ -247,7 +253,7 @@ The generation system handles variable-length contexts and implements fallback s
 
 #### 2.4.3 Results
 Below are some generated examples for the different n-gram models.
-All models were provided the same context – `All the world's a` – which was preprocessed and tokenized using BPE.
+All models were provided the same context – `All the world's a ` – which was preprocessed and tokenized using BPE.
 **Effect of **
 - n=1, k=1000
 
@@ -403,6 +409,7 @@ def evaluate_perplexity_on_test(self, tokenized_test, batch_size=None, context_s
 ```
 
 Text generation uses probabilistic sampling from the learned distribution:
+
 ```python
 def predict(self, context, max_new_tokens=50):
     for i in range(max_new_tokens):
@@ -412,6 +419,7 @@ def predict(self, context, max_new_tokens=50):
         prediction = torch.cat((prediction, next_context), dim=1)
     return prediction
 ```
+
 Note that due to batching generated sequences are always of the specified maximum length and do not end when an end-of-sequence token is reached. 
 
 #### 3.1.5 Experimental Results
@@ -432,11 +440,15 @@ N-gram Order: Classical n-grams showed better performance around n=3-4, balancin
 ### 3.2 Hardcore Neural N-Gram Using Only numpy
 
 ## Task 4: GPT
-### TODO: add the parts from the new parts
+> "_All the world's a_ monster. i have my bond, and i think my master of a chamber had been that endeavour and hath breath of my sword, then i have look'd to bear me thus a soldier's course of passion from the heaven, if thou wilt not go to me to be play. "
+
+ — ShakespeareGPT (trained for 16k steps, k=10, block_size=128)
+
+<!-- [TODO]: add the parts from the new parts -->
 
 Our journey through natural language processing is nearing it's end and brought us to implement a full GPT-style-transformer.
 
-Building the Neural Architecture
+### Building the Neural Architecture
 
 Our GPT implementation centers around the self-attention mechanism, implemented through individual attention heads:
 ```python
@@ -451,6 +463,7 @@ class Head(nn.Module):
 ```
 We think of it as a more sophisticated conversation system. Each token asks questions (queries) about what it's looking for, while all previous tokens offer answers (keys) about what information they contain. The actual content that gets passed forward (values) is then weighted by how well the questions match the answers.
 
+<!-- [TODO] masking != attention -->
 The triangular mask ensures our model plays by the rules - it can't peek into the future during training, maintaining the sequential nature so that the language modeling becomes meaningful.
 
 So why stop at one conversation? When our multi-head attention can run in parallel:
@@ -479,9 +492,8 @@ class FeedForward(nn.Module):
         )
 ```
 
-The expansion to four times the embedding dimension provides computational space for complexer transformations, while the contraction back maintains dimensional consistency throughout the network.
-So to bring it all together 
-Each transformer block elegantly combines these components: 
+The expansion to four times the embedding dimension provides computational space for more complex transformations, while the contraction back maintains dimensional consistency throughout the network.
+Bringing it all together, each transformer block combines these components: 
 
 ```python
 class Block(nn.Module):
@@ -492,7 +504,7 @@ class Block(nn.Module):
         return x
 ```
 
-The residual connections (x = x + ...) should solve the vanishing gradient problem, allowing us to stack many layers while maintaining stable learning. These connections provide "gradient highways" that enable information and learning signals to flow efficiently through deep networks.
+The residual connections (x = x + ...) should avoid the vanishing gradient problem, allowing us to stack many layers without issue. They also improve learning by making the loss landscape smoother.
 Our complete GPT model orchestrates all these components into a cohesive system:
 
 ```python
@@ -531,8 +543,8 @@ np.array(train_ids, dtype=dtype).tofile(str(data_dir / "train.bin"))
 
 This integration should ensure that our transformer operates on the same meaningful subword units that proved effective in our earlier n-gram experiments. The vocabulary size optimization demonstrates attention to computational efficiency - using 16-bit integers when possible to reduce memory usage and improve training speed.
 
-Training the Neural Bard
-Training a transformer requires infrastructure to handle the computational demands. Our batch processing system efficiently samples training sequences:
+### Training the Neural Bard
+Training a transformer requires a lot of computing power. Our batch processing system efficiently samples training sequences:
 
 
 ```python
@@ -544,11 +556,11 @@ def get_batch(split: str, train_data: torch.Tensor, val_data: torch.Tensor, devi
     return x.to(device), y.to(device)
 ```
 
-This sliding window approach ensures our model sees diverse examples while maintaining the sequential relationships essential for language learning.
+This sliding window approach ensures our model sees diverse examples while maintaining the sequential relationships we need for language learning.
 
-Small Model (64 dimensions, 4 heads, 4 layers): Perfect for experimentation and understanding the architecture. Fast training allows rapid iteration and debugging.
-Medium Model (256 dimensions, 4 heads, 6 layers): Our recommended configuration, striking an optimal balance between performance and computational efficiency. This became our primary experimental setup.
-Large Model (256 dimensions, 16 heads, 12 layers): Pushing toward maximum performance within our computational constraints, demonstrating how the architecture scales.
+Small Model (64 dimensions, 4 heads, 4 layers): Perfect for experimentation and understanding the architecture. We used this for testing and debugging.
+"Large" Model (256 dimensions, 4 heads, 6 layers): Our training configuration, with more performance, but still small enough to run on our equipment. This was our primary experimental setup, on which the models we evaluate below were trained.
+
 The training loop incorporates modern best practices:
 
 ```python
@@ -568,8 +580,8 @@ for iter in range(max_iters):
     optimizer.step()
 ```
 
-### HOW TO GENARATE
-once trained our GPT transformes ... (pun intended) into a digital Shakespeare capable of generating new nonsense through sophisticated sampling strategies. The genaration system offers control over creativity and coherence:
+### HOW TO GENERATE
+Once trained, our GPT transforms (pun intended) into a digital Shakespeare capable of generating new nonsense through sophisticated sampling strategies. The generation system offers control over creativity and coherence:
 
 ```python
 def generate_ids(model, start_ids, max_new_tokens, temperature=0.7, top_k=50, top_p=0.9):
@@ -595,10 +607,90 @@ def generate_ids(model, start_ids, max_new_tokens, temperature=0.7, top_k=50, to
         idx = torch.cat((idx, idx_next), dim=1)
 ```
 
-    Temperature controls the model's creativity - low values produce conservative, predictable continuations, while higher values encourage let's call them bold and surprising choices. Top-k sampling focuses attention on the most promising options, while nucleus (top-p) sampling dynamically adjusts the vocabulary size based on probability mass, providing more nuanced control over generation diversity.
+Temperature controls the model's creativity - low values produce conservative, predictable continuations, while higher values encourage ... let's call them "bold and surprising" choices. Top-k sampling focuses attention on the most promising options, while nucleus (top-p) sampling dynamically adjusts the vocabulary size based on probability mass, providing more nuanced control over generation diversity.
     
-    The End :)
-    This was the End of the Report from group 20
+### Results
+
+We trained GPT models on differently tokenized corpora to compare the resulting effects. We chose the following values for k (BPE-segmentations): 
+
+_5; 10; 25; 50_
+
+These were chosen since for the neural n-gram, <!-- [TODO was it the neural or regular?]--> we found lower perplexity values for lower values of k. This result seems to hold, at least in GPT training: 
+
+[TODO] add graphic of training here
+
+We initially trained one model with a context size of 128, 4 attention heads, and 6 layers on a corpus segmented with k=10. Training was performed on a Nvidia RTX 5070ti GPU for 50.000 iterations, to observe the amount of overfitting we would achieve. The training and validation loss during training can be seen below:
+
+This yielded three key results:
+- the results at roughly the time of divergence were pretty good compared to the n-grams (see quote at the beginning of this chapter), but we felt there might still be some improvement possible. 
+- the validation loss diverges strongly from the training loss, but behaves relatively smoothly. 
+- the training run took about 9.5 hours, of which a significant part was the very frequent evaluation to get fine-grained observations. The best loss was achieved at around 12k steps. 
+- We used about 6GB of VRAM (of about 16 available) during training.
+
+Based on these observations, we decided to 
+
+- implement teacher forcing annealing, since gradually moving away from corpus tokens towards model-generated tokens for the input is said to be essential in training transformer models.
+- set a relatively low value of 2 for the patience parameter, as it seemed unlikely to us that the validation loss would go back down after rising twice
+- reduce the evaluation frequency and increase batch size, to reduce GPU load and utilize more of our available VRAM.
+
+Based on the reasoning above, we settled on the following parameters for training:
+```python
+batch_size = 256         # sequences per batch
+block_size = 256         # context length
+max_iters = 40000        # max. iterations (unless patience is reached)
+eval_interval = 2000     # evaluation frequency
+eval_iters = 250         # number of batches per evaluation
+learning_rate = 1e-4     # optimizer learning rate
+n_embd = 256             # embedding dimension
+n_head = 4               # number of attention heads
+n_layer = 6              # number of transformer layers
+dropout = 0.1            # dropout rate
+teacher_forcing_lamda = 5000  # teacher forcing exponential decay rate
+patience = 2             # early stopping patience
+```
+
+Teacher forcing probability at iteration $i$ was computed using exponential decay:
+
+$$
+p_{\text{TF}}(i) = \exp\left(-\frac{i}{\lambda}\right)
+$$
+
+where $i$ is the current iteration and $\lambda$ is the decay rate hyperparameter. With the resulting (decaying) chance, the model would get teacher-forced input during training. 
+
+With this setup, we trained the four models for k's 5, 10, 25, and 50, each of them reaching their optimal validation loss at 16.000 or 20.000 training steps, respectively:
+
+[TODO] insert tensorboard plots
+
+### Evaluation
+The models reach the following perplexities, confirming the earlier (n-gram) result that a lower k leads to lower perplexity.
+| BPE Merges (k) | Validation Perplexity |
+|:--------------:|:--------------------:|
+|       5        |        [TODO]          |
+|      10        |        [TODO]          |
+|      25        |        [TODO]          |
+|      50        |        [TODO]          |
+
+Since these numerical values do not say much about how the model performs, we also performed a set of qualitative tests for each model by varying the initial prompt. 
+We perfomed tests of...
+- ...character entrance: Prompts like "enter brutus.", which are common in the original corpus. For a good model, we expect some likeness to the original work the character is from in the resulting text, like for example the names of other characters from the same play.
+- ...sentiment: By starting with a positive or negative sentiment, we tried to test whether the model could produce text with matching sentiment.
+- ...famous lines: Admittedly, this was mostly for comedic effect - but we still hoped to see the models to follow this up with appropriate output.
+
+Output was generated with the following parameters:
+- Max New Tokens: `256`
+- Temperature: `0.75`
+- Top-k: `42`
+- Top-p (nucleus sampling): `0.95`
+
+
+The full set of tests for each model is stored in evaluation_output.txt, which can be found in this repository. To summarize the results:
+- character entrances generally cause related names to show up in the prompt. 
+At k=5: _enter cleopatra. mark antony now, i do not live to a kingdom and say you, the liar of her cursed with the discontinuance sense._
+- sentiment can only be said to affect the output if you squint really hard at the output - it might just be wishful thinking.
+- the famous lines are continued in interesting, but clearly incoherent ways - _to be, or not to be: that is a man's sheep of more of property_ (k=25) - and sometimes, they even rhyme: _to be, or not to be: that is not be fear in me_ (k=10).
+- the text actually seems better for lower k's - compare: [TODO]
+
+
 
 ## References
 
