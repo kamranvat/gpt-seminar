@@ -197,10 +197,6 @@ def train(
             if loss < best_valid_loss:
                 best_valid_loss = loss
                 steps_without_validation_improvement = 0
-                torch.save(
-                    model.state_dict(),
-                    model_save_dir / f"step_{step}_loss_{loss}",
-                )
 
                 # optionally delete oldest model
                 if save_top_k is not None:
@@ -216,6 +212,11 @@ def train(
                             f"Max number of past model weights to keep reached ({save_top_k}), deleting oldes file: {files[oldest_index]}"
                         )
                         os.remove(files[oldest_index])
+
+                torch.save(
+                    model.state_dict(),
+                    model_save_dir / f"step_{step}_loss_{loss}",
+                )
 
             else:
                 steps_without_validation_improvement += 1
@@ -274,7 +275,7 @@ def load_tokenized(corpusname, type, vocab, bpe=None, k=100, n_chars=None):
 
 def main():
     ############### define parameters ####################
-    n = 2
+    n = 3
     context_size = 128
     batch_size = 64
     patience = 100  # stop early if validation loss has not improved for this number of times
@@ -284,7 +285,7 @@ def main():
     generate_example_every = 500
     model_save_dir = Paths.model_dir
     vocab_dir_path = Paths.vocab_dir
-    results_dir = "results_neural_ngram"
+    results_dir = f"results_neural_ngram_n{n}"
     csv_path = Path(results_dir) / f"perplexities_n{n}.csv"
     context = "All the world's a stage,"
 
@@ -298,6 +299,9 @@ def main():
     ############### parameters end #######################
 
     context = FileUtils().preprocess_corpus(context)
+
+
+    os.makedirs(results_dir, exist_ok=True)
 
     # test different ks
     ks = [100, 250, 500, 750, 1000, 1500, 2000, 5000, 7500, 10000]
@@ -347,12 +351,12 @@ def main():
             optimizers = [
                 torch.optim.SGD(m.parameters()),
                 torch.optim.SGD(m.parameters(), momentum=0.9),
-                torch.optim.Adam(m.parameters(), lr=1e-4),
+                torch.optim.SGD(m.parameters(), momentum=0.9, lr=1e-1),
+                torch.optim.SGD(m.parameters(), momentum=0.9, lr=25e-2),
                 torch.optim.Adam(m.parameters(), lr=1e-2),
                 torch.optim.Adam(m.parameters(), lr=1e-1),
                 torch.optim.Adam(m.parameters(), lr=25e-2),
                 torch.optim.Adam(m.parameters(), lr=5e-1),
-                torch.optim.AdamW(m.parameters(), lr=1e-4),
                 torch.optim.AdamW(m.parameters(), lr=1e-2),
                 torch.optim.AdamW(m.parameters(), lr=1e-1),
                 torch.optim.AdamW(m.parameters(), lr=25e-2),

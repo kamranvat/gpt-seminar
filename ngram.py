@@ -204,7 +204,7 @@ class NGram:
                         context_key = '' if n == 0 else self.to_tuple(test[:n])
                         context = self.n_gram_contexts[n][context_key]
                     except KeyError:
-                        # token is not in the vocab, skip for nwo
+                        # token is not in the vocab, skip for now
                         logger.warning(f"context '{context}' not found, N {n}")
                         continue
 
