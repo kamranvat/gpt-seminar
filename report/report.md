@@ -434,6 +434,171 @@ N-gram Order: Classical n-grams showed better performance around n=3-4, balancin
 ## Task 4: GPT
 ### TODO: add the parts from the new parts
 
+Our journey through natural language processing is nearing it's end and brought us to implement a full GPT-style-transformer.
+
+Building the Neural Architecture
+
+Our GPT implementation centers around the self-attention mechanism, implemented through individual attention heads:
+```python
+class Head(nn.Module):
+    """One head of masked self-attention."""
+    def __init__(self, head_size):
+        super().__init__()
+        self.key   = nn.Linear(n_embd, head_size, bias=False)
+        self.query = nn.Linear(n_embd, head_size, bias=False)
+        self.value = nn.Linear(n_embd, head_size, bias=False)
+        self.register_buffer("tril", torch.tril(torch.ones(block_size, block_size)))
+```
+We think of it as a more sophisticated conversation system. Each token asks questions (queries) about what it's looking for, while all previous tokens offer answers (keys) about what information they contain. The actual content that gets passed forward (values) is then weighted by how well the questions match the answers.
+
+The triangular mask ensures our model plays by the rules - it can't peek into the future during training, maintaining the sequential nature so that the language modeling becomes meaningful.
+
+So why stop at one conversation? When our multi-head attention can run in parallel:
+
+```python
+class MultiHeadAttention(nn.Module):
+    """Multiple attention heads in parallel."""
+    def __init__(self, num_heads, head_size):
+        super().__init__()
+        self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)])
+        self.proj  = nn.Linear(n_embd, n_embd)
+```
+
+After attention determines what's relevant, feed-forward networks process this information:
+
+```python
+class FeedForward(nn.Module):
+    """Simple MLP."""
+    def __init__(self, n_embd):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(n_embd, 4 * n_embd),
+            nn.GELU(),
+            nn.Linear(4 * n_embd, n_embd),
+            nn.Dropout(dropout),
+        )
+```
+
+The expansion to four times the embedding dimension provides computational space for complexer transformations, while the contraction back maintains dimensional consistency throughout the network.
+So to bring it all together 
+Each transformer block elegantly combines these components: 
+
+```python
+class Block(nn.Module):
+    """Transformer block: communication followed by computation."""
+    def forward(self, x):
+        x = x + self.sa(self.ln1(x))  # Self-attention with residual connection
+        x = x + self.ff(self.ln2(x))  # Feed-forward with residual connection
+        return x
+```
+
+The residual connections (x = x + ...) should solve the vanishing gradient problem, allowing us to stack many layers while maintaining stable learning. These connections provide "gradient highways" that enable information and learning signals to flow efficiently through deep networks.
+Our complete GPT model orchestrates all these components into a cohesive system:
+
+```python
+class GPT(nn.Module):
+    def __init__(self, vocab_size):
+        super().__init__()
+        self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
+        self.position_embedding_table = nn.Embedding(block_size, n_embd)
+        self.blocks = nn.Sequential(*[Block(n_embd, n_head=n_head) for _ in range(n_layer)])
+        self.ln_f = nn.LayerNorm(n_embd)
+        self.lm_head = nn.Linear(n_embd, vocab_size)
+        
+        # Weight tying optimization
+        self.lm_head.weight = self.token_embedding_table.weight
+```
+
+The architecture is beautifully logical (are we bragging? maybe. is it deserved? i don't know): token embeddings provide semantic meaning, position embeddings add sequential awareness, transformer blocks perform the heavy lifting of pattern recognition and context integration, and the final layer translates back to vocabulary predictions.
+
+Then lets move to our Seamless Integration with our BPE foundation.
+One of the satisfying aspects of our implementation is how seamlessly it integrates with the BPE tokenization system we built earlier. Our data preparation pipeline transforms Shakespeare's prose into the numerical sequences our transformer craves:
+
+(code)
+### encoder_gpt.py - The bridge between BPE and neural networks
+```python
+bpe = BPE()
+bpe.set_vocab(FileUtils().load_vocab(vocab_path))
+seg_tokens_train = FileUtils().load_vocab(segmented_path_train)
+train_ids = bpe.encode(seg_tokens_train)
+```
+
+### Efficient storage for training
+```python
+dtype = np.uint16 if vocab_size < (1 << 16) else np.uint32
+np.array(train_ids, dtype=dtype).tofile(str(data_dir / "train.bin"))
+```
+
+This integration should ensure that our transformer operates on the same meaningful subword units that proved effective in our earlier n-gram experiments. The vocabulary size optimization demonstrates attention to computational efficiency - using 16-bit integers when possible to reduce memory usage and improve training speed.
+
+Training the Neural Bard
+Training a transformer requires infrastructure to handle the computational demands. Our batch processing system efficiently samples training sequences:
+
+
+```python
+def get_batch(split: str, train_data: torch.Tensor, val_data: torch.Tensor, device: str):
+    data = train_data if split == "train" else val_data
+    ix = torch.randint(len(data) - block_size - 1, (batch_size,))
+    x = torch.stack([data[i : i + block_size] for i in ix])
+    y = torch.stack([data[i + 1 : i + block_size + 1] for i in ix])
+    return x.to(device), y.to(device)
+```
+
+This sliding window approach ensures our model sees diverse examples while maintaining the sequential relationships essential for language learning.
+
+Small Model (64 dimensions, 4 heads, 4 layers): Perfect for experimentation and understanding the architecture. Fast training allows rapid iteration and debugging.
+Medium Model (256 dimensions, 4 heads, 6 layers): Our recommended configuration, striking an optimal balance between performance and computational efficiency. This became our primary experimental setup.
+Large Model (256 dimensions, 16 heads, 12 layers): Pushing toward maximum performance within our computational constraints, demonstrating how the architecture scales.
+The training loop incorporates modern best practices:
+
+```python
+for iter in range(max_iters):
+    if iter % eval_interval == 0:
+        losses = estimate_loss(model, train_data, val_data, device)
+        print(f"step {iter}: train {losses['train']:.4f}, val {losses['val']:.4f}")
+    
+    if iter % 1000 == 0:
+        save_path = build_model_path(out_root, n_head, n_layer, block_size, step=iter)
+        torch.save(model, save_path)
+    
+    xb, yb = get_batch("train", train_data, val_data, device)
+    _, loss = model(xb, yb)
+    optimizer.zero_grad(set_to_none=True)
+    loss.backward()
+    optimizer.step()
+```
+
+### HOW TO GENARATE
+once trained our GPT transformes ... (pun intended) into a digital Shakespeare capable of generating new nonsense through sophisticated sampling strategies. The genaration system offers control over creativity and coherence:
+
+```python
+def generate_ids(model, start_ids, max_new_tokens, temperature=0.7, top_k=50, top_p=0.9):
+    for _ in range(max_new_tokens):
+        logits, _ = model(idx_cond)
+        logits = logits[:, -1, :] / max(temperature, 1e-8)
+        
+        # Top-k filtering concentrates on most likely options
+        if top_k is not None:
+            v, _ = torch.topk(logits, top_k)
+            logits[logits < v[:, [-1]]] = -float("inf")
+        
+        # Nucleus sampling provides dynamic vocabulary selection
+        if top_p is not None:
+            sorted_logits, sorted_idx = torch.sort(logits, descending=True)
+            probs = F.softmax(sorted_logits, dim=-1)
+            cumprobs = torch.cumsum(probs, dim=-1)
+            mask = cumprobs > top_p
+            sorted_logits[mask] = -float("inf")
+        
+        probs = F.softmax(logits, dim=-1)
+        idx_next = torch.multinomial(probs, 1)
+        idx = torch.cat((idx, idx_next), dim=1)
+```
+
+    Temperature controls the model's creativity - low values produce conservative, predictable continuations, while higher values encourage let's call them bold and surprising choices. Top-k sampling focuses attention on the most promising options, while nucleus (top-p) sampling dynamically adjusts the vocabulary size based on probability mass, providing more nuanced control over generation diversity.
+    
+    The End :)
+    This was the End of the Report from group 20
 
 ## References
 
