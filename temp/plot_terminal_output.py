@@ -5,7 +5,7 @@ from pathlib import Path
 steps = []
 train_loss = []
 val_loss = []
-filepath = Path("temp/medium_gpt_train.txt")
+filepath = Path("temp/k100_gelu_gpt_train.txt")
 
 with open(filepath, "r", encoding="utf-8") as f:
     for line in f:

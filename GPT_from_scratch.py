@@ -4,10 +4,12 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from torch.utils.tensorboard import SummaryWriter
+import time
 
 # from save_utils import save_checkpoint
 from GPT_encode import GPTEncoder
-#from GPT_generate import VOCAB_PATH
+
+# from GPT_generate import VOCAB_PATH
 
 # ----------------------------
 # Set K, encode, export .bin/.txt
@@ -45,9 +47,9 @@ SAVE_INTERVAL = 4000
 # ----------------------------
 # Hyperparameters - Medium model
 # ----------------------------
-batch_size = 512  # sequences per batch
-block_size = 128  # context length
-max_iters = 20000
+batch_size = 256  # sequences per batch
+block_size = 256  # context length
+max_iters = 40000
 eval_interval = 2000
 learning_rate = 1e-4
 eval_iters = 250
@@ -55,8 +57,9 @@ n_embd = 256
 n_head = 4
 n_layer = 6
 dropout = 0.1
-scheduling = True  # if True, use teacher forcing with scheduled sampling
+scheduling = False  # if True, use teacher forcing with scheduled sampling
 teacher_forcing_lamda = 0.5 * max_iters  # decay rate
+patience = 2
 
 # # ----------------------------
 # # Hyperparameters - Large model
@@ -76,6 +79,7 @@ teacher_forcing_lamda = 0.5 * max_iters  # decay rate
 # Device
 # ----------------------------
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
 
 # ----------------------------
 # Data loading helpers
@@ -109,7 +113,7 @@ def build_model_path(
     block_size: int,
     step: int,
     k: int | None = None,
-    lamda: float | None = None
+    lamda: float | None = None,
 ):
     """
     Returns checkpoints/<folder>/model_h{n_head}_l{n_layer}_b{block_size}[_it{step}].pt
@@ -193,8 +197,9 @@ def estimate_loss(model, train_data: torch.Tensor, val_data: torch.Tensor, devic
 # Teacher forcing / scheduled sampling helpers
 # ----------------------------
 def teacher_forcing_prob_exponential(iter: int, lamda: float):
-    """ Exponential decay of teacher forcing probability """
+    """Exponential decay of teacher forcing probability"""
     return float(torch.exp(torch.tensor(-iter / lamda)))
+
 
 # ----------------------------
 # Model (GPT-style decoder-only Transformer)
@@ -371,7 +376,23 @@ def main():
     )
 
     # tensorboard
-    writer = SummaryWriter(log_dir="gpt_runs")
+    run_id = build_model_path(
+        out_root,
+        n_head,
+        n_layer,
+        block_size,
+        step=iter,
+        k=K,
+        lamda=teacher_forcing_lamda,
+    )
+    run_id = run_id.stem[6:]  # chop off the "model_"
+    writer = SummaryWriter(log_dir=f"gpt_runs/run_{run_id}")
+
+    # Early stopping variables
+    steps_without_validation_improvement = 0
+    best_valid_loss = float("inf")
+    best_model_state = None
+    best_iter = 0
 
     # Train
     for iter in range(max_iters):
@@ -379,18 +400,46 @@ def main():
         if iter % eval_interval == 0 or iter == max_iters - 1:
             losses = estimate_loss(model, train_data, val_data, device)
             print(f"step {iter}: train {losses['train']:.4f}, val {losses['val']:.4f}")
-            writer.add_scalar("Loss/train", losses['train'], iter)
-            writer.add_scalar("Loss/val", losses['val'], iter)
-            writer.add_scalar("Teacher Forcing Prob.", teacher_forcing_prob_exponential(iter, teacher_forcing_lamda), iter)
+            writer.add_scalar("Loss/train", losses["train"], iter)
+            writer.add_scalar("Loss/val", losses["val"], iter)
+            writer.add_scalar(
+                "Teacher Forcing Prob.",
+                teacher_forcing_prob_exponential(iter, teacher_forcing_lamda),
+                iter,
+            )
 
+            # Early stopping / patience check 
+            if losses["val"] < best_valid_loss:
+                best_valid_loss = losses["val"]
+                steps_without_validation_improvement = 0
+                best_model_state = model.state_dict()
+                best_iter = iter
+            else:
+                steps_without_validation_improvement += 1
+
+            if steps_without_validation_improvement >= patience:
+                print(
+                    f"Early stopping triggered at step {iter}, reverting to best model from step {best_iter}."
+                )
+                model.load_state_dict(best_model_state)
+                break
+
+        # Save model checkpoints regularly
         if iter % SAVE_INTERVAL == 0 or iter == max_iters - 1:
             out_root = Path("checkpoints")
             save_path = build_model_path(
-                out_root, n_head, n_layer, block_size, step=iter, k=K, lamda=teacher_forcing_lamda
+                out_root,
+                n_head,
+                n_layer,
+                block_size,
+                step=iter,
+                k=K,
+                lamda=teacher_forcing_lamda,
             )
             torch.save(model, save_path)  # <-- save the entire model object
             print(f"[saved] {save_path}")
 
+        # Update teacher annealing
         if scheduling:
             prob = teacher_forcing_prob_exponential(iter, teacher_forcing_lamda)
                   
@@ -404,10 +453,9 @@ def main():
             loss.backward()
             optimizer.step()
 
-        if iter == max_iters - 1:
-            writer.close()
+    writer.close()
 
-    # Generate (simple demo)
+    # Generate simple demo at end of training
     start_ctx = torch.zeros(
         (1, 1), dtype=torch.long, device=device
     )  # assumes 0 is a valid token
